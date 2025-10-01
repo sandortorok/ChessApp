@@ -1,0 +1,18 @@
+Sakk webalkalmazás fejlesztése.
+
+Alap funkciók:
+	Regisztráció / bejelentkezés 
+	Statisztika & rangsor
+	ELO / pontszám számítás.
+	Saját játszmák megtekintése, visszajátszás.
+	Sakk tábla megjelenítése és lépések végrehajtása.
+	Legális lépések ellenőrzése
+	Játszma lemondása, döntetlen ajánlás, feladás.
+	Időmérés (pl. 5+0, 3+2).
+	Online real-time játék WebSocket segítségével.
+
+Extra funkciók:
+	AI ellenfél - Gépi játékos (pl. Stockfish integráció).
+	Profil oldal (felhasználónév, avatar, statisztikák).
+	Versenyek / bajnokságok szervezése.
+	Chat a játékosok között.
