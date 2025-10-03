@@ -3,6 +3,7 @@ import React from "react";
 import { Chessboard } from "react-chessboard";
 import PlayerInfo from "./PlayerInfo";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
+import ChessClock from "./components/ChessClock";
 
 interface Props {
     chessPosition: string;
@@ -12,6 +13,7 @@ interface Props {
     onPieceDrop: (args: PieceDropHandlerArgs) => boolean;
     players?: { white?: any; black?: any } | null;
     currentUser?: any | null;
+    currentTurn?: "white" | "black";
 }
 
 export default function ChessGameView({
@@ -22,6 +24,7 @@ export default function ChessGameView({
     onPieceDrop,
     players,
     currentUser,
+    currentTurn,
 }: Props) {
     const isWhite = currentUser?.uid === players?.white?.uid;
 
@@ -43,10 +46,20 @@ export default function ChessGameView({
     };
 
     return (
-        <div className="flex flex-col items-center space-y-4 p-4 bg-teal-900 rounded-lg">  
-            <PlayerInfo color={isWhite ? "black" : "white"} player={topPlayer} />
+        <div className="flex flex-col items-center space-y-4 p-4 bg-teal-900 rounded-lg">
 
-            <div style={{ width: 500, height: 500 }}>
+            <div className="w-full max-w-[500px] flex justify-between items-center mb-2">
+                <PlayerInfo
+                    color={isWhite ? "black" : "white"}
+                    player={topPlayer}
+                />
+                <div className="ml-2 flex-shrink-0 transform scale-90 sm:scale-100">
+                    <ChessClock initialTime={300} active={currentTurn === (isWhite ? "black" : "white")} />
+                </div>
+            </div>
+
+
+            <div className="w-full max-w-[500px] aspect-square">
                 <Chessboard
                     options={{
                         position: chessPosition,
@@ -59,8 +72,12 @@ export default function ChessGameView({
                     }}
                 />
             </div>
-
-            <PlayerInfo color={isWhite ? "white" : "black"} player={bottomPlayer} />
+            <div className="w-full max-w-[500px] flex justify-between items-center mb-2">
+                <PlayerInfo color={isWhite ? "white" : "black"} player={bottomPlayer} />
+                <div className="mt-2 sm:mt-0 transform scale-90 sm:scale-100">
+                    <ChessClock initialTime={300} active={currentTurn === (isWhite ? "white" : "black")} />
+                </div>
+            </div>
         </div>
     );
 }
