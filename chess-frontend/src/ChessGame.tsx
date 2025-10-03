@@ -22,7 +22,7 @@ export default function ChessGame() {
     const [gameData, setGameData] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [players, setPlayers] = useState<{ white: any; black: any } | null>(null);
-
+    const currentTurn = chessGame.turn() === "w" ? "white" : "black";
     // Auth listener
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, (u) => setCurrentUser(u));
@@ -50,7 +50,6 @@ export default function ChessGame() {
             if (!game) return;
 
             const currentPlayers = game.players ?? { white: null, black: null };
-            console.log("currentPlayers:", currentPlayers);
             setPlayers(currentPlayers);
             setGameData(game);
 
@@ -88,21 +87,21 @@ export default function ChessGame() {
     }, [gameId, currentUser]);
 
 
-    function isMyTurnAndPiece(square: Square) {
+    function isMyPiece(square: Square) {
         const piece = chessGame.get(square);
-        console.log('isMyTurnAndPiece:', { square, piece, currentUser, players });
         if (!piece) return false;
         if (!currentUser || !players) return false;
+        const mySide = players.white?.uid === currentUser.uid ? "w" : players.black?.uid === currentUser.uid ? "b" : null; // ha egyik sem, spectator
+        if (!mySide) return false; // ha spectator vagyok, visszaadjuk false-t
 
-        const mySide = players.white?.uid === currentUser.uid ? "w" : "b";
         return piece.color === mySide;
     }
 
     function createNewGame(gameId: string) {
         const initialGame = {
+            moves: [{lastMove: null, fen: chessGame.fen(), updatedAt: Date.now()}],
             fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
             lastMove: null,
-            moves: [],
             players: { white: null, black: null },
             turn: "white",
             status: "waiting",
@@ -117,8 +116,6 @@ export default function ChessGame() {
             })
             .catch((err) => console.error("Error creating game:", err));
     }
-
-
     async function updateGameInDb(fen: string, move: Move) {
         if (!gameId) return;
         const gameRef = ref(db, `games/${gameId}`);
@@ -142,6 +139,7 @@ export default function ChessGame() {
                 updatedAt: Date.now(),
                 status,
                 winner,
+                moves: [...(gameData?.moves || []), { lastMove: { from: move.from, to: move.to, san: move.san }, fen, updatedAt: Date.now() }],
             });
         } catch (err) {
             console.error("updateGameInDb error:", err);
@@ -170,14 +168,9 @@ export default function ChessGame() {
         return true;
     }
     function onSquareClick({ square, piece }: SquareHandlerArgs) {
-        // Ha már van kijelölt forrásmező, azt kell ellenőrizni
-        if (moveFrom) {
-            if (!isMyTurnAndPiece(moveFrom)) return; // csak a saját bábu lehet forrás
-        } else {
-            // Ha még nincs kijelölve forrásmező, a kattintott mező lehet az
-            if (!piece || !isMyTurnAndPiece(square as Square)) return;
-        }
-        console.log('isMyTurnAndPiece passed');
+        if (piece && !isMyPiece(square as Square)) return //Ha bábura kattintunk és nem a sajátunk
+        if (moveFrom && !isMyPiece(moveFrom)) return //Ha már van kijelölt bábu, de az nem a sajátunk
+        console.log('isMyPiece passed');
         if (moveFrom === square) {
             setMoveFrom("");
             setOptionSquares({});
@@ -216,7 +209,7 @@ export default function ChessGame() {
 
     // onPieceDrop: drag & drop handler
     function onPieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs) {
-        if (!isMyTurnAndPiece(sourceSquare as Square)) return false; // csak a saját színnel indulhat a lépés
+        if (!isMyPiece(sourceSquare as Square)) return false; // csak a saját színnel indulhat a lépés
         if (!targetSquare) return false;
         try {
             const move = chessGame.move({ from: sourceSquare, to: targetSquare, promotion: "q" });
@@ -242,6 +235,7 @@ export default function ChessGame() {
             onPieceDrop={onPieceDrop}
             players={gameData?.players}
             currentUser={currentUser}
+            currentTurn={currentTurn} // ← itt
         />
     );
 }
