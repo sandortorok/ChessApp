@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import SettingsScreen from './pages/settings';
 import Lobby from './pages/lobby';
 import MyGames from './pages/mygames';
+import Leaderboard from './pages/leaderboard';
 
 function App() {
   useEffect(() => {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/profile" element={<Layout><SettingsScreen /></Layout>} />
         <Route path="/lobby" element={<Layout><Lobby /></Layout>} />
         <Route path="/mygames" element={<Layout><MyGames /></Layout>} />
+        <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/game/:gameId" element={<Layout><ChessGame /></Layout>} />

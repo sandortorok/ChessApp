@@ -11,12 +11,18 @@ interface PlayerInfoProps {
     losses?: number;
   } | null;
   position?: "top" | "bottom";
+  startingElo?: number;
+  currentElo?: number;
+  eloChange?: number;
 }
 
-export default function PlayerInfo({ color, player, position = "top" }: PlayerInfoProps) {
+export default function PlayerInfo({ color, player, position = "top", startingElo, currentElo, eloChange }: PlayerInfoProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check if player is guest
+  const isGuest = player?.uid?.startsWith("guest_");
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -61,17 +67,48 @@ export default function PlayerInfo({ color, player, position = "top" }: PlayerIn
       <div className="relative">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500/30 to-cyan-500/30 flex items-center justify-center text-2xl border border-teal-500/50">
-            👤
+            {isGuest ? "🎮" : "👤"}
           </div>
           <div>
             <p className="text-white font-semibold">{player?.name || "Guest"}</p>
-            {player?.elo && (
-              <p className="text-teal-400 text-sm font-medium">ELO: {player.elo}</p>
+            {!isGuest && (
+              <div className="flex items-center gap-2">
+                <p className="text-teal-400 text-sm font-medium">
+                  ELO: {currentElo || player?.elo || 1200}
+                </p>
+                {eloChange !== undefined && eloChange !== 0 && (
+                  <span className={`text-xs font-bold ${eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ({eloChange > 0 ? '+' : ''}{eloChange})
+                  </span>
+                )}
+              </div>
+            )}
+            {isGuest && (
+              <p className="text-slate-400 text-sm">🎮 Guest Player</p>
             )}
           </div>
         </div>
 
         <div className="border-t border-teal-500/30 pt-3 space-y-2">
+          {startingElo !== undefined && (
+            <div className="flex justify-between text-sm">
+              <span className="text-teal-300/70">Starting ELO:</span>
+              <span className="text-white font-semibold">{startingElo}</span>
+            </div>
+          )}
+          {currentElo !== undefined && startingElo !== undefined && (
+            <div className="flex justify-between text-sm">
+              <span className="text-teal-300/70">Current ELO:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-semibold">{currentElo}</span>
+                {eloChange !== undefined && eloChange !== 0 && (
+                  <span className={`text-xs font-bold ${eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ({eloChange > 0 ? '+' : ''}{eloChange})
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-teal-300/70">User ID:</span>
             <span className="text-white font-mono text-xs">
@@ -110,7 +147,7 @@ export default function PlayerInfo({ color, player, position = "top" }: PlayerIn
       {/* Player card */}
       <div
         onClick={handleClick}
-        className={`flex items-center gap-3 w-full max-w-[280px] backdrop-blur-sm bg-gray-900/40 px-4 py-3 rounded-lg border border-teal-500/30 ${
+        className={`flex items-center gap-2 w-full max-w-[250px] backdrop-blur-sm bg-gray-900/40 px-3 py-2 rounded-lg border border-teal-500/30 ${
           player?.uid
             ? "cursor-pointer hover:bg-gray-900/60 hover:border-teal-500/50 transition-all duration-200"
             : "opacity-60"
@@ -120,15 +157,26 @@ export default function PlayerInfo({ color, player, position = "top" }: PlayerIn
           <div className="text-teal-300/60 text-xs font-medium uppercase tracking-wide mb-0.5">
             {color === "white" ? "White" : "Black"}
           </div>
-          <div className="text-white font-semibold text-base truncate">
+          <div className="text-white font-semibold text-sm truncate">
             {player?.name ? player.name : player?.uid ? "Guest" : "Waiting..."}
           </div>
         </div>
 
         {player && (
-          <div className="text-teal-300 font-bold text-lg bg-teal-500/20 px-3 py-1.5 rounded-md border border-teal-500/40">
-            {player.elo || 1000}
-          </div>
+          isGuest ? (
+            <div className="text-slate-400 text-xs bg-slate-700/50 px-2.5 py-1 rounded-md border border-slate-600/40 flex items-center gap-1">
+              🎮 Guest
+            </div>
+          ) : (
+            <div className="text-teal-300 font-bold text-base bg-teal-500/20 px-2.5 py-1 rounded-md border border-teal-500/40 flex items-center gap-1.5">
+              <span>{currentElo || player.elo || 1200}</span>
+              {eloChange !== undefined && eloChange !== 0 && (
+                <span className={`text-xs font-semibold ${eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ({eloChange > 0 ? '+' : ''}{eloChange})
+                </span>
+              )}
+            </div>
+          )
         )}
       </div>
 

@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { FacebookAuthProvider, getAuth, GoogleAuthProvider, signInAnonymously } from "firebase/auth";
 import { getDatabase } from "firebase/database";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,6 +20,8 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const facebookProvider = new FacebookAuthProvider();
 export const db = getDatabase(app);
+export const firestore = getFirestore(app);
+
 export const signInGuest = async () => {
   try {
     const result = await signInAnonymously(auth);

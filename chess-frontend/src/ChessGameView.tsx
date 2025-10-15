@@ -3,21 +3,30 @@ import { Chessboard } from "react-chessboard";
 import PlayerInfo from "./PlayerInfo";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import ChessClock from "./components/ChessClock";
-import type { MoveHistory } from "./ChessGame";
+import type { MoveHistoryType, Player } from "./types";
+import MoveHistory from "./components/moveHistory";
 
 interface Props {
     chessPosition: string;
     optionSquares: Record<string, React.CSSProperties>;
     lastMoveSquares: { from: string; to: string } | null;
+    moveHistory?: MoveHistoryType[];
+    viewingHistoryIndex: number | null;
+    players: { white?: Player | null; black?: Player | null } | null;
+    currentUser: { uid?: string } | null;
+    currentTurn: "white" | "black";
+    timeLeft: { white: number; black: number };
+    gameStatus?: string;
+    startingElo?: { white: number; black: number };
+    finalElo?: { white: number; black: number };
+    eloChanges?: { whiteChange: number; blackChange: number } | null;
     onSquareClick: (args: SquareHandlerArgs) => void;
     onPieceDrop: (args: PieceDropHandlerArgs) => boolean;
-    moveHistory?: MoveHistory[];
-    viewingHistoryIndex: number | null;
-    onViewMove?: (index: number) => void;
-    onGoToLatest?: () => void;
-    players?: { white?: any; black?: any } | null;
-    currentUser?: any | null;
-    currentTurn?: "white" | "black";
+    onViewMove: (index: number) => void;
+    onGoToLatest: () => void;
+    onSurrender: () => void;
+    onOfferDraw?: () => void;
+    onTimeExpired?: (side: "white" | "black") => void; // Callback amikor lejár valamelyik idő
 }
 
 export default function ChessGameView({
@@ -33,6 +42,14 @@ export default function ChessGameView({
     viewingHistoryIndex,
     onViewMove,
     onGoToLatest,
+    timeLeft,
+    gameStatus,
+    startingElo,
+    finalElo,
+    eloChanges,
+    onSurrender,
+    onOfferDraw,
+    onTimeExpired
 }: Props) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -43,12 +60,31 @@ export default function ChessGameView({
         window.addEventListener("mousemove", handleMouseMove);
         return () => window.removeEventListener("mousemove", handleMouseMove);
     }, []);
-
+    
     const isWhite = currentUser?.uid === players?.white?.uid;
     const boardOrientation = isWhite ? "white" : "black";
 
     const topPlayer = isWhite ? players?.black : players?.white;
     const bottomPlayer = isWhite ? players?.white : players?.black;
+
+    // ELO adatok kiszámítása
+    const topPlayerColor = isWhite ? "black" : "white";
+    const bottomPlayerColor = isWhite ? "white" : "black";
+    
+    const topPlayerStartingElo = startingElo?.[topPlayerColor];
+    const bottomPlayerStartingElo = startingElo?.[bottomPlayerColor];
+    
+    // Ha van finalElo (játék véget ért), azt mutatjuk, különben a startingElo-t vagy player eredeti ELO-ját
+    const topPlayerCurrentElo = finalElo?.[topPlayerColor] || startingElo?.[topPlayerColor] || topPlayer?.elo;
+    const bottomPlayerCurrentElo = finalElo?.[bottomPlayerColor] || startingElo?.[bottomPlayerColor] || bottomPlayer?.elo;
+    
+    // ELO változás kiszámítása ha van startingElo és finalElo
+    const topPlayerEloChange = (finalElo?.[topPlayerColor] && startingElo?.[topPlayerColor]) 
+        ? finalElo[topPlayerColor] - startingElo[topPlayerColor]
+        : (topPlayerColor === "white" ? eloChanges?.whiteChange : eloChanges?.blackChange);
+    const bottomPlayerEloChange = (finalElo?.[bottomPlayerColor] && startingElo?.[bottomPlayerColor])
+        ? finalElo[bottomPlayerColor] - startingElo[bottomPlayerColor]
+        : (bottomPlayerColor === "white" ? eloChanges?.whiteChange : eloChanges?.blackChange);
 
     const combinedSquareStyles = {
         ...optionSquares,
@@ -59,18 +95,6 @@ export default function ChessGameView({
             }
             : {}),
     };
-
-    // Lépések párokba rendezése (fehér-fekete)
-    const movePairs: Array<{ white?: MoveHistory; black?: MoveHistory; moveNumber: number }> = [];
-    for (let i = 0; i < moveHistory.length; i += 2) {
-        const white = moveHistory[i];
-        const black = moveHistory[i + 1];
-        movePairs.push({
-            white,
-            black,
-            moveNumber: Math.floor(i / 2) + 1,
-        });
-    }
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-teal-950 to-gray-900">
@@ -97,27 +121,35 @@ export default function ChessGameView({
                 <div className="absolute bottom-20 right-1/3 text-6xl animate-float delay-3000">♗</div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-center gap-6 p-4 lg:p-8 min-h-screen">
+            <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-center gap-4 p-3 lg:p-4">
                 {/* Bal oldal: Sakktábla és játékosok */}
-                <div className="flex flex-col items-center space-y-4 w-full lg:w-auto">
+                <div className="flex flex-col items-center space-y-2 w-full lg:w-auto">
                     {/* Felső játékos */}
-                    <div className="w-full max-w-[600px] relative backdrop-blur-xl bg-gray-900/30 rounded-2xl p-4 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
+                    <div className="w-full max-w-[550px] relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
                         <div className="relative flex justify-between items-center z-10">
-                            <PlayerInfo color={isWhite ? "black" : "white"} player={topPlayer} position="top" />
+                            <PlayerInfo 
+                                color={isWhite ? "black" : "white"} 
+                                player={topPlayer ?? null} 
+                                position="top"
+                                startingElo={topPlayerStartingElo}
+                                currentElo={topPlayerCurrentElo}
+                                eloChange={topPlayerEloChange}
+                            />
                             <div className="ml-4">
                                 <ChessClock 
-                                    initialTime={300} 
-                                    active={currentTurn === (isWhite ? "black" : "white")} 
+                                    initialTime={timeLeft[isWhite ? "black" : "white"]} 
+                                    active={currentTurn === (isWhite ? "black" : "white") && gameStatus !== "ended" && gameStatus !== "waiting"}
+                                    onTimeExpired={() => onTimeExpired?.(isWhite ? "black" : "white")}
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Sakktábla */}
-                    <div className="w-full max-w-[600px] relative group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300" />
-                        <div className="relative rounded-2xl overflow-hidden border-2 border-teal-500/30 shadow-2xl">
+                    <div className="w-full max-w-[500px] relative group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+                        <div className="relative rounded-xl overflow-hidden border-2 border-teal-500/30 shadow-2xl">
                             <Chessboard
                                 options={{
                                     position: chessPosition,
@@ -131,11 +163,37 @@ export default function ChessGameView({
                             />
                         </div>
                         {viewingHistoryIndex !== null && (
-                            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+                            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full blur-lg opacity-70" />
-                                    <div className="relative bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 text-gray-900 px-6 py-2 rounded-full font-bold text-sm shadow-xl border-2 border-white/30 animate-gradient">
+                                    <div className="relative bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 text-gray-900 px-5 py-1.5 rounded-full font-bold text-xs shadow-xl border-2 border-white/30 animate-gradient">
                                         📜 Történet megtekintése
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {gameStatus === "waiting" && players?.white && players?.black && (
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl blur-2xl opacity-60" />
+                                    <div className="relative bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 text-gray-900 px-8 py-3 rounded-2xl font-bold text-lg shadow-2xl border-4 border-white/40 animate-pulse">
+                                        ⏳ WAITING
+                                        <div className="text-xs font-normal mt-1 opacity-80">Waiting for first move...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {gameStatus === "waiting" && (!players?.white || !players?.black) && (
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-2xl opacity-60" />
+                                    <div className="relative bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 text-gray-900 px-8 py-3 rounded-2xl font-bold text-lg shadow-2xl border-4 border-white/40 animate-pulse">
+                                        👥 WAITING FOR PLAYERS
+                                        <div className="text-xs font-normal mt-1 opacity-80">
+                                            {!players?.white && !players?.black && "Waiting for both players..."}
+                                            {players?.white && !players?.black && "Waiting for Black player..."}
+                                            {!players?.white && players?.black && "Waiting for White player..."}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -143,153 +201,59 @@ export default function ChessGameView({
                     </div>
 
                     {/* Alsó játékos */}
-                    <div className="w-full max-w-[600px] relative backdrop-blur-xl bg-gray-900/30 rounded-2xl p-4 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
+                    <div className="w-full max-w-[550px] relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
                         <div className="relative flex justify-between items-center z-10">
-                            <PlayerInfo color={isWhite ? "white" : "black"} player={bottomPlayer} position="bottom" />
+                            <PlayerInfo 
+                                color={isWhite ? "white" : "black"} 
+                                player={bottomPlayer ?? null} 
+                                position="bottom"
+                                startingElo={bottomPlayerStartingElo}
+                                currentElo={bottomPlayerCurrentElo}
+                                eloChange={bottomPlayerEloChange}
+                            />
                             <div className="ml-4">
                                 <ChessClock 
-                                    initialTime={300} 
-                                    active={currentTurn === (isWhite ? "white" : "black")} 
+                                    initialTime={timeLeft[isWhite ? "white" : "black"]} 
+                                    active={currentTurn === (isWhite ? "white" : "black") && gameStatus !== "ended" && gameStatus !== "waiting"}
+                                    onTimeExpired={() => onTimeExpired?.(isWhite ? "white" : "black")}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Jobb oldal: Lépéstörténet */}
-                <div className="w-full lg:w-96 relative backdrop-blur-xl bg-gray-900/30 rounded-2xl border border-teal-500/20 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-cyan-500/5" />
+                {/* Jobb oldal: Lépéstörténet és gombok */}
+                <div className="flex flex-col gap-4 w-full lg:w-auto">
+                    <MoveHistory
+                        moveHistory={moveHistory}
+                        viewingHistoryIndex={viewingHistoryIndex}
+                        onViewMove={onViewMove}
+                        onGoToLatest={onGoToLatest}
+                    />
                     
-                    {/* Fejléc */}
-                    <div className="relative bg-gradient-to-r from-teal-500/20 to-cyan-500/20 border-b border-teal-500/20 p-5">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
-                                <span className="text-3xl">♟</span>
-                                Lépések
-                            </h2>
-                            {viewingHistoryIndex !== null && onGoToLatest && (
-                                <button
-                                    onClick={onGoToLatest}
-                                    className="group relative px-4 py-2 text-sm font-semibold text-white overflow-hidden rounded-lg"
-                                >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 transition-transform duration-300 group-hover:scale-105" />
-                                    <span className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    <span className="relative flex items-center gap-1">
-                                        🔄 Élő játék
-                                    </span>
-                                </button>
-                            )}
+                    {/* Game action buttons */}
+                    {gameStatus !== "ended" && (
+                        <div className="flex gap-2 justify-center">
+                            <button
+                                onClick={onOfferDraw}
+                                className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-blue-200 text-sm font-medium rounded-lg border border-blue-600/30 hover:border-blue-500/50 transition-all"
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    🤝 Döntetlen
+                                </span>
+                            </button>
+                            
+                            <button
+                                onClick={onSurrender}
+                                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 text-sm font-medium rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all"
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    🏳️ Feladás
+                                </span>
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="relative p-5">
-                        {moveHistory.length === 0 ? (
-                            <div className="text-center py-12">
-                                <div className="text-7xl mb-4 opacity-20">♟</div>
-                                <p className="text-gray-400 text-lg">Még nincsenek lépések</p>
-                                <p className="text-gray-500 text-sm mt-2">A játék itt fog megjelenni</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-                                {movePairs.map((pair, pairIndex) => (
-                                    <div
-                                        key={pairIndex}
-                                        className="flex items-center gap-3 backdrop-blur-sm bg-gray-900/20 hover:bg-gray-900/40 rounded-xl p-2 transition-all border border-teal-500/10 hover:border-teal-500/30"
-                                    >
-                                        <span className="text-teal-400 font-bold text-lg w-10 text-center bg-gray-900/50 rounded-lg py-1 border border-teal-500/20">
-                                            {pair.moveNumber}
-                                        </span>
-
-                                        <div className="flex gap-2 flex-1">
-                                            {pair.white && (
-                                                <button
-                                                    onClick={() => onViewMove?.(pairIndex * 2)}
-                                                    className={`group relative flex-1 text-center px-4 py-3 rounded-lg font-mono font-semibold text-lg overflow-hidden transition-all transform hover:scale-105 ${
-                                                        viewingHistoryIndex === pairIndex * 2
-                                                            ? "border-2 border-teal-400"
-                                                            : "border border-teal-500/20"
-                                                    }`}
-                                                >
-                                                    <span className={`absolute inset-0 transition-opacity duration-300 ${
-                                                        viewingHistoryIndex === pairIndex * 2
-                                                            ? "bg-gradient-to-r from-teal-500 to-cyan-500 opacity-100"
-                                                            : "bg-gray-900/50 group-hover:bg-gray-900/70 opacity-100"
-                                                    }`} />
-                                                    <span className="relative text-white">{pair.white.san}</span>
-                                                </button>
-                                            )}
-
-                                            {pair.black && (
-                                                <button
-                                                    onClick={() => onViewMove?.(pairIndex * 2 + 1)}
-                                                    className={`group relative flex-1 text-center px-4 py-3 rounded-lg font-mono font-semibold text-lg overflow-hidden transition-all transform hover:scale-105 ${
-                                                        viewingHistoryIndex === pairIndex * 2 + 1
-                                                            ? "border-2 border-teal-400"
-                                                            : "border border-teal-500/20"
-                                                    }`}
-                                                >
-                                                    <span className={`absolute inset-0 transition-opacity duration-300 ${
-                                                        viewingHistoryIndex === pairIndex * 2 + 1
-                                                            ? "bg-gradient-to-r from-teal-500 to-cyan-500 opacity-100"
-                                                            : "bg-gray-900/70 group-hover:bg-gray-900/90 opacity-100"
-                                                    }`} />
-                                                    <span className="relative text-white">{pair.black.san}</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Navigációs gombok */}
-                        {moveHistory.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2 mt-6 pt-6 border-t border-teal-500/20">
-                                <button
-                                    onClick={() => onViewMove?.(0)}
-                                    disabled={viewingHistoryIndex === 0}
-                                    className="relative backdrop-blur-sm bg-gray-900/30 hover:bg-gray-900/50 disabled:bg-gray-900/20 disabled:text-gray-600 text-white px-3 py-3 rounded-lg font-bold transition-all transform hover:scale-105 disabled:transform-none border border-teal-500/20 hover:border-teal-500/40 disabled:border-teal-500/10 group overflow-hidden"
-                                    title="Első lépés"
-                                >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <span className="relative">⏮</span>
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        viewingHistoryIndex !== null && onViewMove?.(Math.max(0, viewingHistoryIndex - 1))
-                                    }
-                                    disabled={viewingHistoryIndex === null || viewingHistoryIndex === 0}
-                                    className="relative backdrop-blur-sm bg-gray-900/30 hover:bg-gray-900/50 disabled:bg-gray-900/20 disabled:text-gray-600 text-white px-3 py-3 rounded-lg font-bold transition-all transform hover:scale-105 disabled:transform-none border border-teal-500/20 hover:border-teal-500/40 disabled:border-teal-500/10 group overflow-hidden"
-                                    title="Előző lépés"
-                                >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <span className="relative">◀</span>
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        viewingHistoryIndex !== null &&
-                                        onViewMove?.(Math.min(moveHistory.length - 1, viewingHistoryIndex + 1))
-                                    }
-                                    disabled={viewingHistoryIndex === null || viewingHistoryIndex === moveHistory.length - 1}
-                                    className="relative backdrop-blur-sm bg-gray-900/30 hover:bg-gray-900/50 disabled:bg-gray-900/20 disabled:text-gray-600 text-white px-3 py-3 rounded-lg font-bold transition-all transform hover:scale-105 disabled:transform-none border border-teal-500/20 hover:border-teal-500/40 disabled:border-teal-500/10 group overflow-hidden"
-                                    title="Következő lépés"
-                                >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <span className="relative">▶</span>
-                                </button>
-                                <button
-                                    onClick={() => onViewMove?.(moveHistory.length - 1)}
-                                    disabled={viewingHistoryIndex === moveHistory.length - 1}
-                                    className="relative backdrop-blur-sm bg-gray-900/30 hover:bg-gray-900/50 disabled:bg-gray-900/20 disabled:text-gray-600 text-white px-3 py-3 rounded-lg font-bold transition-all transform hover:scale-105 disabled:transform-none border border-teal-500/20 hover:border-teal-500/40 disabled:border-teal-500/10 group overflow-hidden"
-                                    title="Utolsó lépés"
-                                >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <span className="relative">⏭</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -317,20 +281,6 @@ export default function ChessGameView({
                 .animate-gradient {
                     background-size: 200% 200%;
                     animation: gradient 3s ease infinite;
-                }
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(20, 184, 166, 0.1);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(20, 184, 166, 0.5);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(20, 184, 166, 0.7);
                 }
             `}</style>
         </div>

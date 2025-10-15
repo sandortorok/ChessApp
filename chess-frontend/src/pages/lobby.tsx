@@ -8,12 +8,17 @@ export default function Lobby() {
     const [profileDropdown, setProfileDropdown] = useState<{
         player: any;
         position: { top: number; left: number };
+        gameData?: any;
+        playerColor?: "white" | "black";
+        openUpwards?: boolean;
     } | null>(null);
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Helper: generate random ELO between 800-2800
-    const getRandomELO = () => Math.floor(Math.random() * 2000) + 800;
+    // Helper: check if player is guest (uid starts with "guest_")
+    const isGuest = (player: any) => {
+        return player?.uid?.startsWith("guest_");
+    };
 
     // Helper: check if game is full
     const isFull = (game: any) => game.players?.white && game.players?.black;
@@ -37,8 +42,10 @@ export default function Lobby() {
                 return "bg-amber-100 text-amber-700";
             case "ongoing":
                 return "bg-emerald-100 text-emerald-700";
-            default:
+            case "ended":
                 return "bg-red-100 text-red-700";
+            default:
+                return "bg-slate-100 text-slate-700";
         }
     };
 
@@ -49,8 +56,10 @@ export default function Lobby() {
                 return "⏳ Waiting";
             case "ongoing":
                 return "▶ Ongoing";
-            default:
+            case "ended":
                 return "✔ Ended";
+            default:
+                return "❓ Unknown";
         }
     };
 
@@ -75,22 +84,17 @@ export default function Lobby() {
         const gamesRef = ref(db, "games");
         const unsub = onValue(gamesRef, (snap) => {
             const val = snap.val() || {};
-            const list = Object.entries(val).map(([id, g]: any) => {
-                // Add random ELO if not present
-                const enrichedGame = {
-                    id,
-                    ...g,
-                };
-                if (enrichedGame.players?.white && !enrichedGame.players.white.elo) {
-                    enrichedGame.players.white.elo = getRandomELO();
-                }
-                if (enrichedGame.players?.black && !enrichedGame.players.black.elo) {
-                    enrichedGame.players.black.elo = getRandomELO();
-                }
-                return enrichedGame;
-            });
+            const list = Object.entries(val)
+                .map(([id, g]: any) => {
+                    return {
+                        id,
+                        ...g,
+                    };
+                })
+                .filter((g) => g.status === "waiting" || g.status === "ongoing") // Csak aktív játékok
+                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Legfrissebb elől
             setGames(list);
-            console.log("Fetched games:", list);
+            console.log("Fetched active games:", list);
         });
         return () => unsub();
     }, []);
@@ -104,7 +108,7 @@ export default function Lobby() {
         navigate(`/game/${gameId}`);
     }
 
-    function handlePlayerClick(event: React.MouseEvent, player: any) {
+    function handlePlayerClick(event: React.MouseEvent, player: any, game?: any, playerColor?: "white" | "black") {
         event.stopPropagation();
         
         if (!player || (!player.name && !player.uid)) {
@@ -118,12 +122,23 @@ export default function Lobby() {
         }
 
         const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const dropdownHeight = 250;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;    
+
+        // Döntés: ha nincs elég hely lent ÉS több hely van fent
+        const openUpwards = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
         setProfileDropdown({
             player,
+            gameData: game,
+            playerColor,
             position: {
-                top: rect.bottom + 8,
+                top: openUpwards ? rect.top - 8 : rect.bottom + 8,
                 left: rect.left,
             },
+            openUpwards,
         });
     }
 
@@ -135,7 +150,7 @@ export default function Lobby() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-bold text-white">♟️ Lobby</h1>
-                            <p className="text-emerald-300/70 mt-2">Find and join games</p>
+                            <p className="text-emerald-300/70 mt-2">Find and join active games</p>
                         </div>
                         <button
                             onClick={createGame}
@@ -188,7 +203,7 @@ export default function Lobby() {
                                 <div className="space-y-3">
                                     <div 
                                         className="bg-slate-900/50 border border-emerald-600/20 rounded p-3 hover:border-emerald-500/40 transition-colors cursor-pointer"
-                                        onClick={(e) => handlePlayerClick(e, game.players?.white)}
+                                        onClick={(e) => handlePlayerClick(e, game.players?.white, game, "white")}
                                     >
                                         <p className="text-xs text-emerald-300/60 mb-1">White</p>
                                         <div className="flex items-center justify-between">
@@ -197,10 +212,28 @@ export default function Lobby() {
                                                     ? game.players.white.name || (game.players.white.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
-                                            {game.players?.white?.elo && (
-                                                <span className="text-emerald-400 font-semibold text-sm bg-emerald-500/20 px-2 py-0.5 rounded">
-                                                    {game.players.white.elo}
-                                                </span>
+                                            {game.players?.white && (
+                                                isGuest(game.players.white) ? (
+                                                    <span className="text-slate-400 text-xs bg-slate-700/50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                        🎮 Guest
+                                                    </span>
+                                                ) : (
+                                                    <div className="flex flex-col items-end gap-0.5">
+                                                        <span className="text-emerald-400 font-semibold text-sm bg-emerald-500/20 px-2 py-0.5 rounded">
+                                                            {game.finalElo?.white || game.startingElo?.white || game.players.white.elo || 1200}
+                                                        </span>
+                                                        {game.status === "ended" && game.finalElo?.white && game.startingElo?.white && (
+                                                            <span className={`text-xs font-bold ${
+                                                                (game.finalElo.white - game.startingElo.white) > 0 
+                                                                    ? 'text-green-400' 
+                                                                    : 'text-red-400'
+                                                            }`}>
+                                                                {(game.finalElo.white - game.startingElo.white) > 0 ? '+' : ''}
+                                                                {game.finalElo.white - game.startingElo.white}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )
                                             )}
                                         </div>
                                     </div>
@@ -213,7 +246,7 @@ export default function Lobby() {
 
                                     <div 
                                         className="bg-slate-900/50 border border-emerald-600/20 rounded p-3 hover:border-emerald-500/40 transition-colors cursor-pointer"
-                                        onClick={(e) => handlePlayerClick(e, game.players?.black)}
+                                        onClick={(e) => handlePlayerClick(e, game.players?.black, game, "black")}
                                     >
                                         <p className="text-xs text-emerald-300/60 mb-1">Black</p>
                                         <div className="flex items-center justify-between">
@@ -222,10 +255,28 @@ export default function Lobby() {
                                                     ? game.players.black.name || (game.players.black.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
-                                            {game.players?.black?.elo && (
-                                                <span className="text-emerald-400 font-semibold text-sm bg-emerald-500/20 px-2 py-0.5 rounded">
-                                                    {game.players.black.elo}
-                                                </span>
+                                            {game.players?.black && (
+                                                isGuest(game.players.black) ? (
+                                                    <span className="text-slate-400 text-xs bg-slate-700/50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                        🎮 Guest
+                                                    </span>
+                                                ) : (
+                                                    <div className="flex flex-col items-end gap-0.5">
+                                                        <span className="text-emerald-400 font-semibold text-sm bg-emerald-500/20 px-2 py-0.5 rounded">
+                                                            {game.finalElo?.black || game.startingElo?.black || game.players.black.elo || 1200}
+                                                        </span>
+                                                        {game.status === "ended" && game.finalElo?.black && game.startingElo?.black && (
+                                                            <span className={`text-xs font-bold ${
+                                                                (game.finalElo.black - game.startingElo.black) > 0 
+                                                                    ? 'text-green-400' 
+                                                                    : 'text-red-400'
+                                                            }`}>
+                                                                {(game.finalElo.black - game.startingElo.black) > 0 ? '+' : ''}
+                                                                {game.finalElo.black - game.startingElo.black}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )
                                             )}
                                         </div>
                                     </div>
@@ -247,29 +298,87 @@ export default function Lobby() {
             {profileDropdown && (
                 <div
                     ref={dropdownRef}
-                    className="fixed z-50 bg-slate-800 border border-emerald-600/50 rounded-lg shadow-xl shadow-emerald-500/20 p-4 min-w-[280px]"
+                    className="fixed z-50 bg-slate-800 border border-emerald-600/50 rounded-lg shadow-xl shadow-emerald-500/20 p-4 min-w-[280px] max-h-[80vh] overflow-y-auto"
                     style={{
-                        top: `${profileDropdown.position.top}px`,
+                        [profileDropdown.openUpwards ? 'bottom' : 'top']: profileDropdown.openUpwards 
+                            ? `${window.innerHeight - profileDropdown.position.top}px`
+                            : `${profileDropdown.position.top}px`,
                         left: `${profileDropdown.position.left}px`,
                     }}
                 >
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-12 h-12 rounded-full bg-emerald-600/20 flex items-center justify-center text-2xl">
-                            👤
+                            {isGuest(profileDropdown.player) ? "🎮" : "👤"}
                         </div>
                         <div>
                             <p className="text-white font-semibold">
                                 {profileDropdown.player.name || "Guest"}
                             </p>
-                            {profileDropdown.player.elo && (
-                                <p className="text-emerald-400 text-sm font-medium">
-                                    ELO: {profileDropdown.player.elo}
+                            {!isGuest(profileDropdown.player) && (
+                                <div className="flex items-center gap-2">
+                                    <p className="text-emerald-400 text-sm font-medium">
+                                        ELO: {
+                                            profileDropdown.gameData?.finalElo?.[profileDropdown.playerColor!] ||
+                                            profileDropdown.player.elo ||
+                                            1200
+                                        }
+                                    </p>
+                                    {profileDropdown.gameData?.status === "ended" && 
+                                     profileDropdown.gameData?.finalElo?.[profileDropdown.playerColor!] && 
+                                     profileDropdown.gameData?.startingElo?.[profileDropdown.playerColor!] && (
+                                        <span className={`text-xs font-bold ${
+                                            (profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
+                                             profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 
+                                                ? 'text-green-400' 
+                                                : 'text-red-400'
+                                        }`}>
+                                            ({(profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
+                                               profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 ? '+' : ''}
+                                            {profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
+                                             profileDropdown.gameData.startingElo[profileDropdown.playerColor!]})
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                            {isGuest(profileDropdown.player) && (
+                                <p className="text-slate-400 text-sm">
+                                    🎮 Guest Player
                                 </p>
                             )}
                         </div>
                     </div>
                     
                     <div className="border-t border-emerald-600/30 pt-3 space-y-2">
+                        {profileDropdown.gameData?.startingElo?.[profileDropdown.playerColor!] && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-emerald-300/70">Starting ELO:</span>
+                                <span className="text-white font-semibold">
+                                    {profileDropdown.gameData.startingElo[profileDropdown.playerColor!]}
+                                </span>
+                            </div>
+                        )}
+                        {profileDropdown.gameData?.finalElo?.[profileDropdown.playerColor!] && 
+                         profileDropdown.gameData?.startingElo?.[profileDropdown.playerColor!] && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-emerald-300/70">Final ELO:</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-white font-semibold">
+                                        {profileDropdown.gameData.finalElo[profileDropdown.playerColor!]}
+                                    </span>
+                                    <span className={`text-xs font-bold ${
+                                        (profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
+                                         profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 
+                                            ? 'text-green-400' 
+                                            : 'text-red-400'
+                                    }`}>
+                                        ({(profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
+                                           profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 ? '+' : ''}
+                                        {profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
+                                         profileDropdown.gameData.startingElo[profileDropdown.playerColor!]})
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex justify-between text-sm">
                             <span className="text-emerald-300/70">User ID:</span>
                             <span className="text-white font-mono">{profileDropdown.player.uid?.slice(0, 8) || "N/A"}</span>
@@ -289,6 +398,25 @@ export default function Lobby() {
                     </div>
                 </div>
             )}
+
+            {/* Custom Scrollbar Style */}
+            <style>{`
+                /* Custom scrollbar for dropdown */
+                .fixed.z-50::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .fixed.z-50::-webkit-scrollbar-track {
+                    background: rgba(15, 23, 42, 0.5);
+                    border-radius: 3px;
+                }
+                .fixed.z-50::-webkit-scrollbar-thumb {
+                    background: rgba(16, 185, 129, 0.5);
+                    border-radius: 3px;
+                }
+                .fixed.z-50::-webkit-scrollbar-thumb:hover {
+                    background: rgba(16, 185, 129, 0.7);
+                }
+            `}</style>
         </div>
     );
 }

@@ -11,12 +11,12 @@ const navigation = [
   { name: "Profile", href: "/profile" },
   { name: "Lobbies", href: "/lobby" },
   { name: "My Games", href: "/mygames" },
+  { name: "Leaderboard", href: "/leaderboard" },
 ];
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,15 +26,7 @@ export default function Header() {
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+  
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -45,158 +37,178 @@ export default function Header() {
   };
 
   return (
-    <header 
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? "bg-gray-900/95 backdrop-blur-lg border-b border-teal-500/20 shadow-lg shadow-teal-500/5" 
-          : "bg-gradient-to-b from-gray-900 to-transparent border-b border-teal-500/10"
-      }`}
-    >
-      <nav aria-label="Global" className="mx-auto max-w-7xl flex items-center justify-between p-6 lg:px-8">
+    <>
+      {/* Desktop sidebar */}
+      <aside 
+        className="hidden lg:flex lg:flex-col w-64 bg-slate-800/60 backdrop-blur-lg border-r border-emerald-600/30 shadow-lg sticky top-0 h-screen"
+      >
         {/* Logo */}
-        <div className="flex lg:flex-1">
-          <a href="/" className="group -m-1.5 p-1.5 flex items-center gap-3">
+        <div className="p-6 border-b border-emerald-600/30">
+          <a href="/" className="group flex items-center gap-3">
             <span className="sr-only">Chess App</span>
             <div className="relative">
-              <div className="absolute inset-0 bg-teal-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+              <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
               <img
                 alt="Chess App"
-                src="logo.png"
+                src="/logo.png"
                 className="relative h-10 w-auto transform group-hover:scale-110 transition-transform duration-300"
               />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent hidden sm:block">
+            <span className="text-xl font-bold text-white">
               Chess Arena
             </span>
           </a>
         </div>
 
-        {/* Mobile menu button */}
-        <div className="flex lg:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="relative -m-2.5 inline-flex items-center justify-center rounded-lg p-2.5 text-gray-300 hover:text-teal-400 hover:bg-gray-800/50 transition-all duration-200"
-          >
-            <span className="sr-only">Open main menu</span>
-            <Bars3Icon aria-hidden="true" className="size-6" />
-          </button>
-        </div>
-
-        {/* Desktop navigation */}
-        <div className="hidden lg:flex lg:gap-x-2">
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
           {navigation.map((item) => (
             <a 
               key={item.name} 
               href={item.href} 
-              className="relative px-4 py-2 text-sm font-semibold text-gray-300 hover:text-teal-400 transition-colors duration-200 group"
+              className="flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 border border-transparent hover:border-emerald-600/20"
             >
-              <span className="relative z-10">{item.name}</span>
-              <span className="absolute inset-0 rounded-lg bg-teal-500/0 group-hover:bg-teal-500/10 transition-all duration-200" />
+              {item.name}
             </a>
           ))}
-        </div>
+        </nav>
 
-        {/* Auth buttons */}
-        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-x-4 lg:items-center">
+        {/* User section */}
+        <div className="p-4 border-t border-emerald-600/30">
           {user ? (
-            <>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-teal-500/30">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 border border-emerald-600/20">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg">
                   {user.email?.[0].toUpperCase() || "U"}
                 </div>
-                <span className="text-sm text-gray-400 hidden xl:block max-w-[150px] truncate">
-                  {user.email}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium truncate">
+                    {user.displayName || "Player"}
+                  </p>
+                  <p className="text-xs text-slate-400 truncate">
+                    {user.email}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm font-semibold text-gray-300 hover:text-red-400 transition-colors duration-200"
+                className="w-full px-4 py-2 text-sm font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-500/30 transition-all duration-200"
               >
                 Logout
               </button>
-            </>
+            </div>
           ) : (
             <a 
               href="/login" 
-              className="group relative px-6 py-2.5 text-sm font-semibold text-white overflow-hidden rounded-lg"
+              className="block w-full px-6 py-2.5 text-sm font-semibold text-white text-center bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 rounded-lg transition-all duration-200"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 transition-transform duration-300 group-hover:scale-105" />
-              <span className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="relative flex items-center gap-2">
-                Log in
-                <span className="transform group-hover:translate-x-1 transition-transform duration-300">→</span>
-              </span>
+              Log in →
             </a>
           )}
         </div>
-      </nav>
+      </aside>
+
+      {/* Mobile header */}
+      <header 
+        className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg shadow-lg"
+      >
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Logo and title */}
+          <a href="/" className="flex items-center gap-2">
+            <img
+              alt="Chess App"
+              src="/logo.png"
+              className="h-8 w-auto"
+            />
+            <span className="text-lg font-bold text-white">
+              Chess Arena
+            </span>
+          </a>
+
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="inline-flex items-center justify-center rounded-lg p-2 text-white hover:text-emerald-400 hover:bg-slate-700/80 transition-all duration-200 active:bg-slate-700 border border-emerald-600/30"
+            aria-label="Open main menu"
+          >
+            <span className="sr-only">Open main menu</span>
+            <Bars3Icon aria-hidden="true" className="h-6 w-6 stroke-current" />
+          </button>
+        </div>
+      </header>
 
       {/* Mobile navigation */}
       <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-        <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-gradient-to-b from-gray-900 to-gray-950 p-6 sm:max-w-sm sm:ring-1 sm:ring-teal-500/20 shadow-2xl">
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" />
+        <DialogPanel className="fixed inset-y-0 right-0 z-[70] w-full overflow-y-auto bg-slate-900 p-6 sm:max-w-sm border-l border-emerald-600/30 shadow-2xl">
           <div className="flex items-center justify-between">
-            <a href="/" className="group -m-1.5 p-1.5 flex items-center gap-3">
+            <a href="/" className="group flex items-center gap-2 sm:gap-3">
               <span className="sr-only">Chess App</span>
               <div className="relative">
-                <div className="absolute inset-0 bg-teal-500 blur-xl opacity-20" />
+                <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-20" />
                 <img
                   alt="Chess App"
-                  src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=teal&shade=500"
+                  src="/logo.png"
                   className="relative h-8 w-auto"
                 />
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="text-base sm:text-lg font-bold text-white">
                 Chess Arena
               </span>
             </a>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
-              className="-m-2.5 rounded-lg p-2.5 text-gray-300 hover:text-teal-400 hover:bg-gray-800/50 transition-all duration-200"
+              className="-m-2.5 rounded-lg p-2.5 text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200 active:bg-slate-800"
+              aria-label="Close menu"
             >
               <span className="sr-only">Close menu</span>
-              <XMarkIcon aria-hidden="true" className="size-6" />
+              <XMarkIcon aria-hidden="true" className="h-6 w-6" />
             </button>
           </div>
 
           <div className="mt-8 flow-root">
-            <div className="-my-6 divide-y divide-white/5">
+            <div className="-my-6 divide-y divide-emerald-600/20">
               <div className="space-y-2 py-6">
                 {navigation.map((item) => (
                   <a
                     key={item.name}
                     href={item.href}
-                    className="group -mx-3 flex items-center gap-3 rounded-xl px-3 py-3 text-base font-semibold text-gray-300 hover:text-teal-400 hover:bg-teal-500/10 transition-all duration-200"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="group -mx-3 flex items-center gap-3 rounded-lg px-3 py-3 text-base font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 border border-transparent hover:border-emerald-600/20 active:bg-slate-800"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {item.name}
                   </a>
                 ))}
               </div>
               <div className="py-6 space-y-4">
                 {user && (
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-800/50 border border-teal-500/20">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-teal-500/30">
+                  <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-emerald-600/20">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0">
                       {user.email?.[0].toUpperCase() || "U"}
                     </div>
-                    <span className="text-sm text-gray-400 truncate flex-1">
+                    <span className="text-sm text-slate-300 truncate flex-1 min-w-0">
                       {user.email}
                     </span>
                   </div>
                 )}
                 {user ? (
                   <button
-                    onClick={handleLogout}
-                    className="-mx-3 block w-full rounded-xl px-3 py-3 text-base font-semibold text-red-400 hover:bg-red-500/10 text-left transition-all duration-200"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="-mx-3 block w-full rounded-lg px-3 py-3 text-base font-semibold text-red-400 hover:bg-red-500/10 text-left transition-all duration-200 border border-transparent hover:border-red-500/30 active:bg-red-500/20"
                   >
                     Logout
                   </button>
                 ) : (
                   <a
                     href="/login"
-                    className="-mx-3 block rounded-xl px-3 py-3 text-base font-semibold text-center bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-400 hover:to-cyan-400 transition-all duration-200 shadow-lg shadow-teal-500/30"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="-mx-3 block rounded-lg px-3 py-3 text-base font-semibold text-center bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-white transition-all duration-200 active:bg-emerald-600/60"
                   >
                     Log in →
                   </a>
@@ -206,6 +218,6 @@ export default function Header() {
           </div>
         </DialogPanel>
       </Dialog>
-    </header>
+    </>
   );
 }
