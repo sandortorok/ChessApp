@@ -27,9 +27,9 @@ export default function MoveHistory({
     }
 
     return (
-        <div className="w-full lg:w-80 bg-slate-800/60 border border-emerald-600/30 rounded-lg overflow-hidden">
+        <div className="w-full max-w-full min-w-[400px] bg-slate-800/60 border border-emerald-600/30 rounded-lg overflow-hidden m-0 flex flex-col h-full shrink-0">
             {/* Fejléc */}
-            <div className="bg-slate-700/50 border-b border-emerald-600/30 p-3">
+            <div className="bg-slate-700/50 border-b border-emerald-600/30 p-3 flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         <span className="text-2xl">♟</span>
@@ -48,7 +48,7 @@ export default function MoveHistory({
                 </div>
             </div>
 
-            <div className="p-3">
+            <div className="p-3 flex-1 flex flex-col min-h-0">
                 {moveHistory.length === 0 ? (
                     <div className="text-center py-8">
                         <div className="text-5xl mb-3 opacity-20">♟</div>
@@ -56,7 +56,8 @@ export default function MoveHistory({
                         <p className="text-slate-400 text-xs mt-1">A játék itt fog megjelenni</p>
                     </div>
                 ) : (
-                    <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+                    <>
+                    <div className="space-y-1.5 flex-1 overflow-y-auto pr-2 custom-scrollbar min-h-0">
                         {movePairs.map((pair, pairIndex) => (
                             <div
                                 key={pairIndex}
@@ -98,11 +99,9 @@ export default function MoveHistory({
                             </div>
                         ))}
                     </div>
-                )}
 
-                {/* Navigációs gombok */}
-                {moveHistory.length > 0 && (
-                    <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-emerald-600/30">
+                {/* Navigációs gombok - mindig látható */}
+                <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-emerald-600/30 flex-shrink-0">
                         <button
                             onClick={() => onViewMove(0)}
                             disabled={viewingHistoryIndex === 0}
@@ -141,6 +140,7 @@ export default function MoveHistory({
                             ⏭
                         </button>
                     </div>
+                    </>
                 )}  
             </div>
 

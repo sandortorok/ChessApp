@@ -1,4 +1,4 @@
-import { X, Trophy, Clock, Users } from "lucide-react";
+import { X, Trophy, Clock, Users, XCircle } from "lucide-react";
 import type { Player, winReason } from "../types";
 
 interface GameEndModalProps {
@@ -59,6 +59,8 @@ export default function GameEndModal({
                 return "Insufficient Material";
             case "draw":
                 return "Draw";
+            case "aborted":
+                return "Game Aborted";
             default:
                 return "";
         }
@@ -78,6 +80,10 @@ export default function GameEndModal({
 
     const getResultMessage = () => {
         if (winner === "draw") {
+            // Ha aborted, speciális üzenet
+            if (winReason === "aborted") {
+                return "Game Aborted";
+            }
             return "The game ended in a draw";
         }
 
@@ -115,13 +121,19 @@ export default function GameEndModal({
                     <div className="flex justify-center">
                         <div className={`p-4 rounded-full ${
                             winner === "draw" 
-                                ? "bg-emerald-600/20 border border-emerald-600/30" 
+                                ? winReason === "aborted"
+                                    ? "bg-orange-600/20 border border-orange-600/30"
+                                    : "bg-emerald-600/20 border border-emerald-600/30"
                                 : isWinner() 
                                     ? "bg-emerald-600/20 border border-emerald-600/30" 
                                     : "bg-red-500/20 border border-red-500/30"
                         }`}>
                             {winner === "draw" ? (
-                                <Users size={48} className="text-emerald-400" />
+                                winReason === "aborted" ? (
+                                    <XCircle size={48} className="text-orange-400" />
+                                ) : (
+                                    <Users size={48} className="text-emerald-400" />
+                                )
                             ) : (
                                 <Trophy
                                     size={48}
@@ -134,7 +146,9 @@ export default function GameEndModal({
                     {/* Result message */}
                     <p className={`text-center text-lg font-medium ${
                         winner === "draw" 
-                            ? "text-emerald-300/70" 
+                            ? winReason === "aborted"
+                                ? "text-orange-300"
+                                : "text-emerald-300/70"
                             : isWinner() 
                                 ? "text-emerald-400" 
                                 : "text-red-400"
@@ -153,7 +167,7 @@ export default function GameEndModal({
                             </div>
                         )}
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-emerald-300">Result:</span>
+                            <span className="text-sm font-medium text-emerald-300">Reason:</span>
                             <div className="flex items-center gap-2">
                                 {winReason === "timeout" && <Clock size={16} className="text-emerald-300/70" />}
                                 <span className="text-white font-medium">
@@ -162,8 +176,17 @@ export default function GameEndModal({
                             </div>
                         </div>
 
+                        {/* Aborted game message */}
+                        {winReason === "aborted" && (
+                            <div className="pt-3 border-t border-orange-600/20">
+                                <div className="text-sm text-orange-300 text-center italic">
+                                    ⚠️ A játék túl korán lett megszakítva. Nincs ELO változás.
+                                </div>
+                            </div>
+                        )}
+
                         {/* ELO Changes */}
-                        {(eloChanges || (startingElo && finalElo)) && (
+                        {winReason !== "aborted" && (eloChanges || (startingElo && finalElo)) && (
                             <div className="pt-3 border-t border-emerald-600/20">
                                 <div className="text-sm font-medium text-emerald-300 mb-2">ELO Changes:</div>
                                 <div className="space-y-2">

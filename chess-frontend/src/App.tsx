@@ -10,6 +10,7 @@ import SettingsScreen from './pages/settings';
 import Lobby from './pages/lobby';
 import MyGames from './pages/mygames';
 import Leaderboard from './pages/leaderboard';
+import TailwindColumns from './pages/test';
 
 function App() {
   useEffect(() => {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
+        <Route path="/test" element={<Layout><TailwindColumns /></Layout>} />
         <Route path="/game/:gameId" element={<Layout><ChessGame /></Layout>} />
       </Routes>
     </Router>

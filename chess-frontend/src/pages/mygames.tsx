@@ -8,6 +8,8 @@ import { onAuthStateChanged } from "firebase/auth";
 export default function MyGames() {
     const [games, setGames] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [userLoading, setUserLoading] = useState(true);
+    const [gamesLoading, setGamesLoading] = useState(false);
     const [profileDropdown, setProfileDropdown] = useState<{
         player: any;
         position: { top: number; left: number };
@@ -56,13 +58,20 @@ export default function MyGames() {
     }, [profileDropdown]);
 
     useEffect(() => {
-        const unsubAuth = onAuthStateChanged(auth, (user) => setCurrentUser(user));
+        const unsubAuth = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            setUserLoading(false);
+        });
         return () => unsubAuth();
     }, []);
 
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser) {
+            setGames([]);
+            return;
+        }
 
+        setGamesLoading(true);
         const gamesRef = ref(db, "games");
         const unsub = onValue(gamesRef, (snap) => {
             const val = snap.val() || {};
@@ -77,6 +86,7 @@ export default function MyGames() {
                 )
                 .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); // Legfrissebb elől
             setGames(list);
+            setGamesLoading(false);
             console.log("Fetched ended games for user:", currentUser.uid, list);
         });
 
@@ -137,7 +147,12 @@ export default function MyGames() {
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-6 py-12">
-                {games.length === 0 ? (
+                {userLoading || gamesLoading ? (
+                    <div className="text-center py-16">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+                        <p className="text-emerald-300/70 mt-4">Loading your games...</p>
+                    </div>
+                ) : games.length === 0 ? (
                     <div className="text-center py-16 bg-slate-800/50 rounded-xl border border-emerald-600/30">
                         <div className="text-5xl mb-4">📜</div>
                         <h3 className="text-xl font-semibold text-white mb-2">No Completed Games</h3>
@@ -178,6 +193,8 @@ export default function MyGames() {
                                                     ? 'border-green-500/60 bg-green-500/5 ring-2 ring-green-500/20'
                                                     : game.winner === 'black'
                                                     ? 'border-red-500/60 bg-red-500/5 ring-2 ring-red-500/20'
+                                                    : game.winReason === 'aborted'
+                                                    ? 'border-orange-500/60 bg-orange-500/5 ring-2 ring-orange-500/20'
                                                     : 'border-amber-500/60 bg-amber-500/5 ring-2 ring-amber-500/20'
                                                 : 'border-emerald-600/20'
                                         }`}
@@ -191,10 +208,20 @@ export default function MyGames() {
                                                 game.winner === 'white' 
                                                     ? 'bg-green-500' 
                                                     : game.winner === 'black' 
-                                                    ? 'bg-red-500' 
+                                                    ? 'bg-red-500'
+                                                    : game.winReason === 'aborted'
+                                                    ? 'bg-orange-500'
                                                     : 'bg-amber-500'
                                             }`}>
-                                                {game.winner === 'white' ? '👑 WON' : game.winner === 'black' ? '💀 LOST' : game.winner === 'draw' ? '🤝 DRAW' : 'YOU'}
+                                                {game.winner === 'white' 
+                                                    ? '👑 WON' 
+                                                    : game.winner === 'black' 
+                                                    ? '💀 LOST' 
+                                                    : game.winner === 'draw' && game.winReason === 'aborted'
+                                                    ? '⛔ ABORTED'
+                                                    : game.winner === 'draw' 
+                                                    ? '🤝 DRAW' 
+                                                    : 'YOU'}
                                             </div>
                                         )}
                                         <p className="text-xs text-emerald-300/60 mb-1">White</p>
@@ -212,7 +239,7 @@ export default function MyGames() {
                                                 ) : (
                                                     <span className="text-emerald-400 font-semibold text-sm bg-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1.5">
                                                         <span>{game.finalElo?.white || game.players.white.elo || 1200}</span>
-                                                        {game.status === "ended" && game.finalElo?.white && game.startingElo?.white && (
+                                                        {game.status === "ended" && game.winReason !== 'aborted' && game.finalElo?.white && game.startingElo?.white && (
                                                             <span className={`text-xs font-bold ${
                                                                 (game.finalElo.white - game.startingElo.white) > 0 
                                                                     ? 'text-green-400' 
@@ -241,6 +268,8 @@ export default function MyGames() {
                                                     ? 'border-green-500/60 bg-green-500/5 ring-2 ring-green-500/20'
                                                     : game.winner === 'white'
                                                     ? 'border-red-500/60 bg-red-500/5 ring-2 ring-red-500/20'
+                                                    : game.winReason === 'aborted'
+                                                    ? 'border-orange-500/60 bg-orange-500/5 ring-2 ring-orange-500/20'
                                                     : 'border-amber-500/60 bg-amber-500/5 ring-2 ring-amber-500/20'
                                                 : 'border-emerald-600/20'
                                         }`}
@@ -254,10 +283,20 @@ export default function MyGames() {
                                                 game.winner === 'black' 
                                                     ? 'bg-green-500' 
                                                     : game.winner === 'white' 
-                                                    ? 'bg-red-500' 
+                                                    ? 'bg-red-500'
+                                                    : game.winReason === 'aborted'
+                                                    ? 'bg-orange-500'
                                                     : 'bg-amber-500'
                                             }`}>
-                                                {game.winner === 'black' ? '👑 WON' : game.winner === 'white' ? '💀 LOST' : game.winner === 'draw' ? '🤝 DRAW' : 'YOU'}
+                                                {game.winner === 'black' 
+                                                    ? '👑 WON' 
+                                                    : game.winner === 'white' 
+                                                    ? '💀 LOST' 
+                                                    : game.winner === 'draw' && game.winReason === 'aborted'
+                                                    ? '⛔ ABORTED'
+                                                    : game.winner === 'draw' 
+                                                    ? '🤝 DRAW' 
+                                                    : 'YOU'}
                                             </div>
                                         )}
                                         <p className="text-xs text-emerald-300/60 mb-1">Black</p>
@@ -275,7 +314,7 @@ export default function MyGames() {
                                                 ) : (
                                                     <span className="text-emerald-400 font-semibold text-sm bg-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1.5">
                                                         <span>{game.finalElo?.black || game.players.black.elo || 1200}</span>
-                                                        {game.status === "ended" && game.finalElo?.black && game.startingElo?.black && (
+                                                        {game.status === "ended" && game.winReason !== 'aborted' && game.finalElo?.black && game.startingElo?.black && (
                                                             <span className={`text-xs font-bold ${
                                                                 (game.finalElo.black - game.startingElo.black) > 0 
                                                                     ? 'text-green-400' 

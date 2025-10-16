@@ -2,17 +2,17 @@ Sakk webalkalmazás fejlesztése.
 
 Alap funkciók:
 	Regisztráció / bejelentkezés 
-	TODO Statisztika & rangsor
-	TODO ELO / pontszám számítás.
-	TODO Saját játszmák megtekintése, visszajátszás.
+	Statisztika & rangsor
+	ELO / pontszám számítás.
+	Saját játszmák megtekintése, visszajátszás.
 	Sakk tábla megjelenítése és lépések végrehajtása.
 	Legális lépések ellenőrzése
-	TODO Játszma lemondása, döntetlen ajánlás, feladás.
-	TODO Időmérés (pl. 5+0, 3+2).
+	Játszma lemondása, döntetlen ajánlás, feladás.
+	Időmérés (pl. 5+0, 3+2).
 	Online real-time játék WebSocket segítségével.
 
 Extra funkciók:
 	TODO AI ellenfél - Gépi játékos (pl. Stockfish integráció).
-	TODO Profil oldal (felhasználónév, avatar, statisztikák).
-	TODO Versenyek / bajnokságok szervezése.
-	TODO Chat a játékosok között.
+	Profil oldal (felhasználónév, avatar, statisztikák).
+	-----TODO Versenyek / bajnokságok szervezése.
+	Chat a játékosok között.

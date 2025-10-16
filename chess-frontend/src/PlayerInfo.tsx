@@ -9,6 +9,7 @@ interface PlayerInfoProps {
     elo?: number;
     wins?: number;
     losses?: number;
+    draws?: number;
   } | null;
   position?: "top" | "bottom";
   startingElo?: number;
@@ -61,20 +62,17 @@ export default function PlayerInfo({ color, player, position = "top", startingEl
   } : undefined;
 
   return (
-    <div ref={containerRef} className="relative z-[1000]">
-      {/* Player card */}
+    <>
       <div
+        ref={containerRef}
         onClick={handleClick}
-        className={`flex items-center gap-2 w-full max-w-[250px] backdrop-blur-sm bg-gray-900/40 px-3 py-2 rounded-lg border border-teal-500/30 ${
+        className={`flex items-center gap-2 w-full min-w-[200px] max-w-[250px] backdrop-blur-sm bg-gray-900/40 px-3 py-1.5 rounded-lg border border-teal-500/30 relative z-[1000] ${
           player?.uid
             ? "cursor-pointer hover:bg-gray-900/60 hover:border-teal-500/50 transition-all duration-200"
             : "opacity-60"
         }`}
       >
         <div className="flex-1 min-w-0">
-          <div className="text-teal-300/60 text-xs font-medium uppercase tracking-wide mb-0.5">
-            {color === "white" ? "White" : "Black"}
-          </div>
           <div className="text-white font-semibold text-sm truncate">
             {player?.name ? player.name : player?.uid ? "Guest" : "Waiting..."}
           </div>
@@ -82,11 +80,11 @@ export default function PlayerInfo({ color, player, position = "top", startingEl
 
         {player && (
           isGuest ? (
-            <div className="text-slate-400 text-xs bg-slate-700/50 px-2.5 py-1 rounded-md border border-slate-600/40 flex items-center gap-1">
+            <div className="text-slate-400 text-xs bg-slate-700/50 px-2 py-0.5 rounded-md border border-slate-600/40 flex items-center gap-1">
               🎮 Guest
             </div>
           ) : (
-            <div className="text-teal-300 font-bold text-base bg-teal-500/20 px-2.5 py-1 rounded-md border border-teal-500/40 flex items-center gap-1.5">
+            <div className="text-teal-300 font-bold text-sm bg-teal-500/20 px-2 py-0.5 rounded-md border border-teal-500/40 flex items-center gap-1.5">
               <span>{currentElo || player.elo || 1200}</span>
               {eloChange !== undefined && eloChange !== 0 && (
                 <span className={`text-xs font-semibold ${eloChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -125,6 +123,6 @@ export default function PlayerInfo({ color, player, position = "top", startingEl
           animation: slideDown 0.2s ease-out;
         }
       `}</style>
-    </div>
+    </>
   );
 }

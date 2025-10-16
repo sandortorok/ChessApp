@@ -17,7 +17,8 @@ export type winReason =
     | "insufficientMaterial"
     | "draw"
     | "resignation"
-    | "aggreement";
+    | "aggreement"
+    | "aborted";
 export interface MoveHistoryType {
     from: string;
     to: string;
@@ -49,9 +50,13 @@ export type Game = {
     winner: "white" | "black" | "draw" | null;
     winReason: winReason | null;
     timeLeft: { white: number; black: number };
+    timeControl?: number; // Percben
+    increment?: number; // Másodpercben
+    opponentType?: "human" | "ai"; // Ellenfél típusa
     createdAt: number;
     updatedAt: number;
     started: boolean;
     startingElo?: { white: number; black: number };
     finalElo?: { white: number; black: number };
+    drawOfferedBy?: string | null; // Ki ajánlotta fel a döntetlent (uid)
 };

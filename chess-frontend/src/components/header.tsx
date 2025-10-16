@@ -13,6 +13,8 @@ const navigation = [
   { name: "Lobbies", href: "/lobby" },
   { name: "My Games", href: "/mygames" },
   { name: "Leaderboard", href: "/leaderboard" },
+  { name: "test", href: "/test" },
+
 ];
 
 const DEFAULT_AVATAR = "emoji:👤";

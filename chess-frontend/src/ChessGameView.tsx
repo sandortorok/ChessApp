@@ -5,6 +5,7 @@ import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import ChessClock from "./components/ChessClock";
 import type { MoveHistoryType, Player } from "./types";
 import MoveHistory from "./components/moveHistory";
+import ChatBox from "./components/ChatBox";
 
 interface Props {
     chessPosition: string;
@@ -13,19 +14,21 @@ interface Props {
     moveHistory?: MoveHistoryType[];
     viewingHistoryIndex: number | null;
     players: { white?: Player | null; black?: Player | null } | null;
-    currentUser: { uid?: string } | null;
+    currentUser: { uid?: string; displayName?: string | null; email?: string | null } | null;
     currentTurn: "white" | "black";
     timeLeft: { white: number; black: number };
     gameStatus?: string;
     startingElo?: { white: number; black: number };
     finalElo?: { white: number; black: number };
     eloChanges?: { whiteChange: number; blackChange: number } | null;
+    gameId?: string; // Chat-hez szükséges
     onSquareClick: (args: SquareHandlerArgs) => void;
     onPieceDrop: (args: PieceDropHandlerArgs) => boolean;
     onViewMove: (index: number) => void;
     onGoToLatest: () => void;
     onSurrender: () => void;
     onOfferDraw?: () => void;
+    onAbort?: () => void;
     onTimeExpired?: (side: "white" | "black") => void; // Callback amikor lejár valamelyik idő
 }
 
@@ -49,7 +52,9 @@ export default function ChessGameView({
     eloChanges,
     onSurrender,
     onOfferDraw,
-    onTimeExpired
+    onAbort,
+    onTimeExpired,
+    gameId
 }: Props) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -97,7 +102,7 @@ export default function ChessGameView({
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-teal-950 to-gray-900">
+        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-teal-950 to-gray-900 min-w-full flex flex-col">
             {/* Animated background */}
             <div className="absolute inset-0">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(20,184,166,0.15),transparent_50%)]" />
@@ -121,13 +126,13 @@ export default function ChessGameView({
                 <div className="absolute bottom-20 right-1/3 text-6xl animate-float delay-3000">♗</div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-center gap-4 p-3 lg:p-4">
-                {/* Bal oldal: Sakktábla és játékosok */}
-                <div className="flex flex-col items-center space-y-2 w-full lg:w-auto">
+            <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row lg:h-screen gap-4 p-3 lg:p-4">
+                {/* Bal oszlop: PlayerInfo - Chessboard - PlayerInfo (66%) */}
+                <div className="flex flex-col lg:flex-[2] gap-3">
                     {/* Felső játékos */}
-                    <div className="w-full max-w-[550px] relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                    <div className="w-full max-w-[600px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
-                        <div className="relative flex justify-between items-center z-10">
+                        <div className="relative flex justify-start items-center gap-4 z-10">
                             <PlayerInfo 
                                 color={isWhite ? "black" : "white"} 
                                 player={topPlayer ?? null} 
@@ -136,7 +141,7 @@ export default function ChessGameView({
                                 currentElo={topPlayerCurrentElo}
                                 eloChange={topPlayerEloChange}
                             />
-                            <div className="ml-4">
+                            <div className="ml-auto">
                                 <ChessClock 
                                     initialTime={timeLeft[isWhite ? "black" : "white"]} 
                                     active={currentTurn === (isWhite ? "black" : "white") && gameStatus !== "ended" && gameStatus !== "waiting"}
@@ -146,8 +151,8 @@ export default function ChessGameView({
                         </div>
                     </div>
 
-                    {/* Sakktábla */}
-                    <div className="w-full max-w-[500px] relative group">
+                    {/* Sakktábla - flex-1 hogy kitöltse a helyet */}
+                    <div className="flex-1 w-full max-w-[500px] mx-auto relative group flex items-center justify-center">
                         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
                         <div className="relative rounded-xl overflow-hidden border-2 border-teal-500/30 shadow-2xl">
                             <Chessboard
@@ -201,9 +206,9 @@ export default function ChessGameView({
                     </div>
 
                     {/* Alsó játékos */}
-                    <div className="w-full max-w-[550px] relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                    <div className="w-full max-w-[600px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
-                        <div className="relative flex justify-between items-center z-10">
+                        <div className="relative flex justify-start items-center gap-4 z-10">
                             <PlayerInfo 
                                 color={isWhite ? "white" : "black"} 
                                 player={bottomPlayer ?? null} 
@@ -212,7 +217,7 @@ export default function ChessGameView({
                                 currentElo={bottomPlayerCurrentElo}
                                 eloChange={bottomPlayerEloChange}
                             />
-                            <div className="ml-4">
+                            <div className="ml-auto">
                                 <ChessClock 
                                     initialTime={timeLeft[isWhite ? "white" : "black"]} 
                                     active={currentTurn === (isWhite ? "white" : "black") && gameStatus !== "ended" && gameStatus !== "waiting"}
@@ -223,37 +228,80 @@ export default function ChessGameView({
                     </div>
                 </div>
 
-                {/* Jobb oldal: Lépéstörténet és gombok */}
-                <div className="flex flex-col gap-4 w-full lg:w-auto">
-                    <MoveHistory
-                        moveHistory={moveHistory}
-                        viewingHistoryIndex={viewingHistoryIndex}
-                        onViewMove={onViewMove}
-                        onGoToLatest={onGoToLatest}
-                    />
+                {/* Jobb oszlop: ViewHistory - Gombok - ChatBox (33%) */}
+                <div className="flex flex-col lg:flex-1 gap-3 w-full lg:w-auto">
+                    {/* Lépéstörténet - flex-1 */}
+                    <div className="flex-1 min-h-0">
+                        <MoveHistory
+                            moveHistory={moveHistory}
+                            viewingHistoryIndex={viewingHistoryIndex}
+                            onViewMove={onViewMove}
+                            onGoToLatest={onGoToLatest}
+                        />
+                    </div>
                     
-                    {/* Game action buttons */}
-                    {gameStatus !== "ended" && (
-                        <div className="flex gap-2 justify-center">
-                            <button
-                                onClick={onOfferDraw}
-                                className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-blue-200 text-sm font-medium rounded-lg border border-blue-600/30 hover:border-blue-500/50 transition-all"
-                            >
-                                <span className="flex items-center gap-1.5">
-                                    🤝 Döntetlen
-                                </span>
-                            </button>
+                    {/* Game action buttons - csak akkor jelenik meg ha van gomb */}
+                    {gameStatus !== "ended" && (moveHistory.length <= 1 || moveHistory.length > 1) && (
+                        <div className="flex gap-3 justify-center items-center py-2">
+                            {/* Abort gomb - csak 0-1 lépés esetén */}
+                            {moveHistory.length <= 1 && onAbort && (
+                                <button
+                                    onClick={onAbort}
+                                    className="group relative px-6 py-2.5 bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 font-semibold rounded-lg border border-orange-600/30 hover:border-orange-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 overflow-hidden cursor-pointer"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                                    <span className="relative flex items-center gap-2">
+                                        ⛔ Megszakítás
+                                    </span>
+                                </button>
+                            )}
                             
-                            <button
-                                onClick={onSurrender}
-                                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 text-sm font-medium rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all"
-                            >
-                                <span className="flex items-center gap-1.5">
-                                    🏳️ Feladás
-                                </span>
-                            </button>
+                            {/* Döntetlen gomb - csak 2+ lépés esetén */}
+                            {moveHistory.length > 1 && (
+                                <button
+                                    onClick={onOfferDraw}
+                                    className="group relative px-6 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg border border-emerald-600/30 hover:border-emerald-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 overflow-hidden cursor-pointer"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                                    <span className="relative flex items-center gap-2">
+                                        🤝 Döntetlen
+                                    </span>
+                                </button>
+                            )}
+                            
+                            {/* Feladás gomb - csak 2+ lépés esetén */}
+                            {moveHistory.length > 1 && (
+                                <button
+                                    onClick={onSurrender}
+                                    className="group relative px-6 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 font-semibold rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 overflow-hidden cursor-pointer"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                                    <span className="relative flex items-center gap-2">
+                                        🏳️ Feladás
+                                    </span>
+                                </button>
+                            )}
                         </div>
                     )}
+
+                    {/* Chat Box - flex-1 */}
+                    <div className="flex-1 min-h-0">
+                        {gameId && currentUser?.uid && (
+                            <ChatBox
+                                gameId={gameId}
+                                currentUserId={currentUser.uid}
+                                currentUserName={
+                                    currentUser.displayName || 
+                                    currentUser.email?.split('@')[0] || 
+                                    (players?.white?.uid === currentUser.uid
+                                        ? (players.white.displayName || players.white.email?.split('@')[0] || "Játékos")
+                                        : players?.black?.uid === currentUser.uid
+                                        ? (players.black.displayName || players.black.email?.split('@')[0] || "Játékos")
+                                        : "Játékos")
+                                }
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 

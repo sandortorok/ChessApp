@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Chess, Move } from "chess.js";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { ref, set, onValue, get, update } from "firebase/database";
 import { db, auth, firestore } from "./firebase/config";
 import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
@@ -9,9 +9,15 @@ import ChessGameView from "./ChessGameView";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import type { Square, winReason, Game, MoveHistoryType } from "./types";
 import GameEndModal from "./components/GameEndModal";
+import ConfirmSurrenderModal from "./components/ConfirmSurrenderModal";
+import DrawOfferModal from "./components/DrawOfferModal";
+import type { GameSettings } from "./components/CreateGameModal";
 
 export default function ChessGame() {
     const { gameId } = useParams<{ gameId: string }>();
+    const location = useLocation();
+    const gameSettings = (location.state as { gameSettings?: GameSettings })?.gameSettings;
+    
     const chessGameRef = useRef(new Chess());
     const chessGame = chessGameRef.current;
 
@@ -25,14 +31,17 @@ export default function ChessGame() {
     const [viewingHistoryIndex, setViewingHistoryIndex] = useState<number | null>(null);
     const currentTurn = chessGame.turn() === "w" ? "white" : "black";
     const [timeLeft, setTimeLeft] = useState<{ white: number; black: number }>({
-        white: 1 * 60 * 1000,
-        black: 1 * 60 * 1000,
+        white: 5 * 60 * 1000, // Alapértelmezett, amíg be nem töltődik
+        black: 5 * 60 * 1000,
     });
     const [prevStatus, setPrevStatus] = useState(gameData?.status);
 
     const [showEndModal, setShowEndModal] = useState(false);
     const [winReason, setWinReason] = useState<winReason>("checkmate");
     const [eloChanges, setEloChanges] = useState<{ whiteChange: number; blackChange: number } | null>(null);
+    const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false);
+    const [showDrawOfferModal, setShowDrawOfferModal] = useState(false);
+    const [drawOfferedBy, setDrawOfferedBy] = useState<string | null>(null);
 
     // Auth listener
     useEffect(() => {
@@ -49,7 +58,7 @@ export default function ChessGame() {
             .then((snap) => {
                 if (!snap.exists()) {
                     console.log("No game found, creating new one.");
-                    createNewGame(gameId);
+                    createNewGame(gameId, gameSettings);
                 }
             })
             .catch((err) => console.error("Error checking game:", err));
@@ -123,12 +132,13 @@ export default function ChessGame() {
                 const userDoc = await getDoc(doc(firestore, "users", currentUser.uid));
                 const userData = userDoc.exists() ? userDoc.data() : { elo: 1200, wins: 0, losses: 0 };
                 
-                const newPlayer = { 
+                const newPlayer = {
                     uid: currentUser.uid, 
                     name: currentUser.displayName || currentUser.email, 
                     elo: userData.elo || 1200, 
                     wins: userData.wins || 0, 
-                    losses: userData.losses || 0 
+                    losses: userData.losses || 0,
+                    draws: userData.draws || 0
                 };
                 set(ref(db, `games/${gameId}/players/${sideToJoin}`), newPlayer);
             }
@@ -183,6 +193,21 @@ export default function ChessGame() {
 
     }, [gameData?.status, showEndModal, prevStatus]);
 
+    // Döntetlen ajánlat figyelése
+    useEffect(() => {
+        if (!gameData || !currentUser) return;
+
+        // Ha valaki felajánlotta a döntetlent ÉS nem én voltam az
+        if (gameData.drawOfferedBy && gameData.drawOfferedBy !== currentUser.uid) {
+            setDrawOfferedBy(gameData.drawOfferedBy);
+            setShowDrawOfferModal(true);
+        } else if (!gameData.drawOfferedBy) {
+            // Ha nincs ajánlat, bezárjuk a modalt
+            setShowDrawOfferModal(false);
+            setDrawOfferedBy(null);
+        }
+    }, [gameData?.drawOfferedBy, currentUser]);
+
     function handleNewGame() {
         console.log("Új játék indítása...");
         // TODO: Implementálni később
@@ -201,8 +226,13 @@ export default function ChessGame() {
         return piece.color === mySide;
     }
 
-    function createNewGame(gameId: string) {
-        const initialTime = 1 * 60 * 1000; // 1 perc
+    function createNewGame(gameId: string, settings?: GameSettings) {
+        // Ha van settings a modal-ból, használjuk, különben alapértelmezett értékek
+        const timeControl = settings?.timeControl || 5; // perc
+        const increment = settings?.increment || 0; // másodperc
+        const opponentType = settings?.opponentType || "human";
+        
+        const initialTime = timeControl * 60 * 1000; // Konvertálás milliszekundumra
         const initialGame = {
             moves: [],
             fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -212,6 +242,9 @@ export default function ChessGame() {
             status: "waiting", // Waiting amíg nem lép valaki
             started: false, // A játék csak az első lépés után indul el
             timeLeft: { white: initialTime, black: initialTime },
+            timeControl: timeControl, // Percben - mentjük az adatbázisba
+            increment: increment, // Másodpercben - mentjük az adatbázisba
+            opponentType: opponentType, // "human" vagy "ai" - mentjük az adatbázisba
             createdAt: Date.now(),
             updatedAt: Date.now(),
         };
@@ -219,7 +252,11 @@ export default function ChessGame() {
         const gameRef = ref(db, `games/${gameId}`);
         set(gameRef, initialGame)
             .then(() => {
-                console.log("New game created:", gameId);
+                console.log("New game created:", gameId, "with settings:", { 
+                    timeControl, 
+                    increment,
+                    opponentType 
+                });
             })
             .catch((err) => console.error("Error creating game:", err));
     }
@@ -236,8 +273,13 @@ export default function ChessGame() {
         let winReason: winReason | null = null;
         const prevTurn = chessGame.turn() === "w" ? "black" : "white";
         const newTimeLeft = { ...gameData.timeLeft };
+        
+        // Időkezelés: csökkentjük az eltelt időt és hozzáadjuk az incrementet
         if (newTimeLeft && newTimeLeft[prevTurn] !== undefined && gameData.started) {
             newTimeLeft[prevTurn] = Math.max(0, newTimeLeft[prevTurn] - elapsed);
+            // Hozzáadjuk az incrementet az adatbázisból (másodpercben tárolt, milliszekundumra konvertáljuk)
+            const incrementMs = (gameData.increment || 0) * 1000;
+            newTimeLeft[prevTurn] += incrementMs;
         }
 
         let status = "ongoing"; // Első lépés után mindig "ongoing"
@@ -572,31 +614,148 @@ export default function ChessGame() {
         setOptionSquares({});
         setMoveFrom("");
     }
-    function handleOfferDraw() {
-        if (!canMove() || !gameId || !gameData || gameData.status === "ended") return;
+    async function handleOfferDraw() {
+        if (!canMove() || !gameId || !gameData || gameData.status === "ended" || !currentUser) return;
         console.log("Döntetlen ajánlás...");
+        
         const gameRef = ref(db, `games/${gameId}`);
-        update(gameRef, {
-            status: "ended",
-            winner: "draw",
-            winReason: "aggreement",
-        });
-        setWinReason("aggreement");
-        setShowEndModal(true);
+        
+        try {
+            // Csak beállítjuk, hogy ki ajánlotta fel a döntetlent
+            await update(gameRef, {
+                drawOfferedBy: currentUser.uid,
+            });
+            
+            console.log("Draw offered by:", currentUser.uid);
+        } catch (err) {
+            console.error("Error offering draw:", err);
+        }
     }
-    function handleSurrender() {
-        if (!canMove() || !gameId || !gameData || gameData.status === "ended") return;
+
+    async function handleAcceptDraw() {
+        if (!gameId || !gameData) return;
+        console.log("Döntetlen elfogadása...");
+        
+        const gameRef = ref(db, `games/${gameId}`);
+        
+        try {
+            await update(gameRef, {
+                status: "ended",
+                winner: "draw",
+                winReason: "aggreement",
+                drawOfferedBy: null, // Töröljük az ajánlatot
+            });
+            
+            console.log("Draw accepted!");
+            
+            // Frissítjük a Firestore-t
+            const changes = await updateFirestoreOnGameEnd("draw");
+            if (changes) {
+                setEloChanges(changes);
+            }
+            
+            setWinReason("aggreement");
+            setShowDrawOfferModal(false);
+            setShowEndModal(true);
+        } catch (err) {
+            console.error("Error accepting draw:", err);
+        }
+    }
+
+    async function handleDeclineDraw() {
+        if (!gameId) return;
+        console.log("Döntetlen elutasítása...");
+        
+        const gameRef = ref(db, `games/${gameId}`);
+        
+        try {
+            // Töröljük az ajánlatot
+            await update(gameRef, {
+                drawOfferedBy: null,
+            });
+            
+            setShowDrawOfferModal(false);
+            console.log("Draw declined");
+        } catch (err) {
+            console.error("Error declining draw:", err);
+        }
+    }
+
+    async function handleAbort() {
+        if (!gameId || !gameData || gameData.status === "ended" || !currentUser) return;
+        
+        // Csak 0-1 lépés esetén lehet megszakítani
+        if (moveHistory.length > 1) return;
+        
+        console.log("Játék megszakítása...");
+        
+        const gameRef = ref(db, `games/${gameId}`);
+        
+        try {
+            // Játék befejezése döntetlenként, DE ELO változás nélkül
+            const now = Date.now();
+            await update(gameRef, {
+                status: "ended",
+                winner: "draw",
+                winReason: "aborted",
+                updatedAt: now,
+            });
+            
+            console.log("Game aborted without ELO changes");
+            
+            // NEM frissítjük a Firestore-t (nincs ELO változás)
+            setWinReason("aborted");
+            setShowEndModal(true);
+        } catch (err) {
+            console.error("Error aborting game:", err);
+        }
+    }
+
+    async function handleSurrender() {
+        // Ellenőrizzük, hogy játékos vagy-e és a játék nem ért-e véget
+        if (!currentUser || !gameData?.players || gameData.status === "ended") return;
+        
+        const mySide = gameData.players.white?.uid === currentUser.uid ? "white" :
+            gameData.players.black?.uid === currentUser.uid ? "black" : null;
+        
+        // Csak játékos adhatja fel a játékot (nem néző)
+        if (!mySide) return;
+        
+        // Megerősítő modal megnyitása
+        setShowSurrenderConfirm(true);
+    }
+    
+    async function confirmSurrender() {
+        if (!gameId || !gameData) return;
+        
         console.log("Megadás...");
+        
         const gameRef = ref(db, `games/${gameId}`);
         const mySide = gameData.players?.white?.uid === currentUser?.uid ? "white" : "black";
         const winner = mySide === "white" ? "black" : "white";
-        update(gameRef, {
-            status: "ended",
-            winner,
-            winReason: "resignation",
-        });
-        setWinReason("resignation");
-        setShowEndModal(true);
+        
+        try {
+            await update(gameRef, {
+                status: "ended",
+                winner,
+                winReason: "resignation",
+            });
+            
+            console.log(`${mySide} surrendered, ${winner} wins!`);
+            
+            // Frissítjük a Firestore-t
+            const changes = await updateFirestoreOnGameEnd(winner);
+            if (changes) {
+                setEloChanges(changes);
+            }
+            
+            setWinReason("resignation");
+            setShowEndModal(true);
+            setShowSurrenderConfirm(false);
+        } catch (err) {
+            console.error("Error updating game on surrender:", err);
+            setShowSurrenderConfirm(false);
+        }
     }
     // Callback amikor lejár valamelyik játékos ideje
     async function handleTimeExpired(side: "white" | "black") {
@@ -640,15 +799,19 @@ export default function ChessGame() {
                 viewingHistoryIndex={viewingHistoryIndex}
                 timeLeft={timeLeft}
                 gameStatus={gameData?.status}
+                timeControl={gameData?.timeControl}
+                increment={gameData?.increment}
                 startingElo={gameData?.startingElo}
                 finalElo={gameData?.finalElo}
                 eloChanges={eloChanges}
+                gameId={gameId}
                 onSquareClick={onSquareClick}
                 onPieceDrop={onPieceDrop}
                 onViewMove={viewMove}
                 onGoToLatest={goToLatestPosition}
                 onTimeExpired={handleTimeExpired}
                 onOfferDraw={handleOfferDraw}
+                onAbort={handleAbort}
                 onSurrender={handleSurrender}
             />
             <GameEndModal
@@ -664,6 +827,29 @@ export default function ChessGame() {
                 onNewGame={handleNewGame}
                 onRematch={handleRematch}
             />
+            <ConfirmSurrenderModal
+                isOpen={showSurrenderConfirm}
+                title="Feladás megerősítése"
+                message="Biztosan feladod a játékot? Ez azonnal véget ér a játéknak, veszítesz és ELO pontokat veszítesz."
+                confirmText="Feladom"
+                cancelText="Folytatom"
+                type="danger"
+                onConfirm={confirmSurrender}
+                onCancel={() => setShowSurrenderConfirm(false)}
+            />
+            {showDrawOfferModal && drawOfferedBy && (
+                <DrawOfferModal
+                    opponentName={
+                        gameData?.players?.white?.uid === drawOfferedBy
+                            ? (gameData.players.white.displayName || gameData.players.white.email?.split('@')[0] || "Ellenfél")
+                            : gameData?.players?.black?.uid === drawOfferedBy
+                            ? (gameData.players.black.displayName || gameData.players.black.email?.split('@')[0] || "Ellenfél")
+                            : "Ellenfél"
+                    }
+                    onAccept={handleAcceptDraw}
+                    onDecline={handleDeclineDraw}
+                />
+            )}
         </>
     );
 }

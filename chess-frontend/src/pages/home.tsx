@@ -1,18 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { Zap, Trophy, Users, BarChart3, Crown } from "lucide-react";
+import { useState } from "react";
+import CreateGameModal, { type GameSettings } from "../components/CreateGameModal";
 
 function Home() {
     const user = useAuth();
     const navigate = useNavigate();
+    const [showCreateGameModal, setShowCreateGameModal] = useState(false);
 
     const createNewGame = () => {
         if (!user) {
             navigate("/login");
             return;
         }
+        setShowCreateGameModal(true);
+    };
+
+    const handleCreateGame = (settings: GameSettings) => {
         const newGameId = Date.now().toString();
-        navigate(`/game/${newGameId}`);
+        console.log("Creating game with settings:", settings);
+        navigate(`/game/${newGameId}`, { state: { gameSettings: settings } });
     };
 
     const features = [
@@ -88,9 +96,9 @@ function Home() {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
                         <button
                             onClick={createNewGame}
-                            className="group relative px-8 py-4 bg-slate-800/80 hover:bg-slate-700/80 text-white hover:text-gray-100 text-lg font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm min-w-[200px]"
+                            className="group relative px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white text-lg font-bold rounded-xl border-2 border-teal-400/50 hover:border-teal-300/70 cursor-pointer transition-all duration-300 shadow-lg shadow-teal-500/30 hover:shadow-teal-400/50 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm min-w-[200px]"
                         >
-                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                             <span className="relative flex items-center justify-center gap-2">
                                 {user ? "Start Playing" : "Get Started"}
                                 <span className="transform group-hover:translate-x-1 transition-transform">→</span>
@@ -219,6 +227,13 @@ function Home() {
                     animation: gradient 3s ease infinite;
                 }
             `}</style>
+
+            {/* Create Game Modal */}
+            <CreateGameModal
+                isOpen={showCreateGameModal}
+                onClose={() => setShowCreateGameModal(false)}
+                onCreate={handleCreateGame}
+            />
         </div>
     );
 }

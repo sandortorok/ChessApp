@@ -4,10 +4,12 @@ import { db, auth } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import PlayerProfileModal from "../components/PlayerProfileModal";
+import CreateGameModal, { type GameSettings } from "../components/CreateGameModal";
 
 export default function Lobby() {
     const [games, setGames] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
     const [profileDropdown, setProfileDropdown] = useState<{
         player: any;
         position: { top: number; left: number };
@@ -15,6 +17,7 @@ export default function Lobby() {
         playerColor?: "white" | "black";
         openUpwards?: boolean;
     } | null>(null);
+    const [showCreateGameModal, setShowCreateGameModal] = useState(false);
     const navigate = useNavigate();
 
     // Helper: check if player is guest (uid starts with "guest_")
@@ -94,17 +97,25 @@ export default function Lobby() {
                 .filter((g) => g.status === "waiting" || g.status === "ongoing") // Csak aktív játékok
                 .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Legfrissebb elől
             setGames(list);
+            setLoading(false);
             console.log("Fetched active games:", list);
         });
         return () => unsub();
     }, []);
 
-    async function createGame() {
+    function handleCreateGame(settings: GameSettings) {
         const newGameId = Date.now().toString();
-        navigate(`/game/${newGameId}`);
+        // Itt továbbíthatod a settings-et a játék oldalra
+        // Egyelőre csak navigálunk a játékhoz
+        console.log("Creating game with settings:", settings);
+        navigate(`/game/${newGameId}`, { state: { gameSettings: settings } });
     }
 
     function joinGame(gameId: string) {
+        if (!currentUser) {
+            navigate("/login");
+            return;
+        }
         navigate(`/game/${gameId}`);
     }
 
@@ -153,7 +164,13 @@ export default function Lobby() {
                             <p className="text-emerald-300/70 mt-2">Find and join active games</p>
                         </div>
                         <button
-                            onClick={createGame}
+                            onClick={() => {
+                                if (!currentUser) {
+                                    navigate("/login");
+                                    return;
+                                }
+                                setShowCreateGameModal(true);
+                            }}
                             className="group relative px-8 py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-emerald-400 hover:text-emerald-300 font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm"
                         >
                             {/* Animated background shine */}
@@ -172,13 +189,24 @@ export default function Lobby() {
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-6 py-12">
-                {games.length === 0 ? (
+                {loading ? (
+                    <div className="text-center py-16">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+                        <p className="text-emerald-300/70 mt-4">Loading games...</p>
+                    </div>
+                ) : games.length === 0 ? (
                     <div className="text-center py-16 bg-slate-800/50 rounded-xl border border-emerald-600/30">
                         <div className="text-5xl mb-4">♟️</div>
                         <h3 className="text-xl font-semibold text-white mb-2">No Active Games</h3>
                         <p className="text-emerald-300/70 mb-6">Be the first to create a game!</p>
                         <button
-                            onClick={createGame}
+                            onClick={() => {
+                                if (!currentUser) {
+                                    navigate("/login");
+                                    return;
+                                }
+                                setShowCreateGameModal(true);
+                            }}
                             className="group relative px-8 py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-emerald-400 hover:text-emerald-300 font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm"
                         >
                             {/* Animated background shine */}
@@ -207,7 +235,14 @@ export default function Lobby() {
                                             alt="chess"
                                         />
                                         <div>
-                                            <p className="text-sm font-medium text-emerald-300/70">Game</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium text-emerald-300/70">Game</p>
+                                                {game.timeControl !== undefined && game.increment !== undefined && (
+                                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-600/30">
+                                                        ⏱ {game.timeControl}+{game.increment}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-white font-mono text-sm">{game.id.slice(-6)}</p>
                                             {game.createdAt && (
                                                 <p className="text-emerald-300/50 text-xs mt-0.5">
@@ -239,7 +274,7 @@ export default function Lobby() {
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
                                                 {game.players?.white
-                                                    ? game.players.white.displayName || (game.players.white.uid ? "Guest" : "Waiting")
+                                                    ? game.players.white.name || (game.players.white.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
                                             {game.players?.white && (
@@ -366,6 +401,13 @@ export default function Lobby() {
                     onClose={() => setProfileDropdown(null)}
                 />
             )}
+
+            {/* Create Game Modal */}
+            <CreateGameModal
+                isOpen={showCreateGameModal}
+                onClose={() => setShowCreateGameModal(false)}
+                onCreate={handleCreateGame}
+            />
         </div>
     );
 }
