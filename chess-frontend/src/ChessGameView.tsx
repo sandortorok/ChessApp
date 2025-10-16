@@ -130,7 +130,7 @@ export default function ChessGameView({
                 {/* Bal oszlop: PlayerInfo - Chessboard - PlayerInfo (66%) */}
                 <div className="flex flex-col lg:flex-[2] gap-3">
                     {/* Felső játékos */}
-                    <div className="w-full max-w-[600px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                    <div className="w-full max-w-[500px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
                         <div className="relative flex justify-start items-center gap-4 z-10">
                             <PlayerInfo 
@@ -206,7 +206,7 @@ export default function ChessGameView({
                     </div>
 
                     {/* Alsó játékos */}
-                    <div className="w-full max-w-[600px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                    <div className="w-full max-w-[500px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
                         <div className="relative flex justify-start items-center gap-4 z-10">
                             <PlayerInfo 
