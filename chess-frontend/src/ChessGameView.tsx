@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Chessboard } from "react-chessboard";
 import PlayerInfo from "./PlayerInfo";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
@@ -56,16 +56,6 @@ export default function ChessGameView({
     onTimeExpired,
     gameId
 }: Props) {
-    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            setMousePosition({ x: e.clientX, y: e.clientY });
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, []);
-    
     const isWhite = currentUser?.uid === players?.white?.uid;
     const boardOrientation = isWhite ? "white" : "black";
 
@@ -107,15 +97,6 @@ export default function ChessGameView({
             <div className="absolute inset-0">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(20,184,166,0.15),transparent_50%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.15),transparent_50%)]" />
-                
-                {/* Mouse-following glow */}
-                <div 
-                    className="absolute w-96 h-96 rounded-full bg-teal-500/20 blur-3xl transition-all duration-300 pointer-events-none"
-                    style={{
-                        left: mousePosition.x - 192,
-                        top: mousePosition.y - 192,
-                    }}
-                />
             </div>
 
             {/* Floating chess pieces */}
@@ -130,7 +111,7 @@ export default function ChessGameView({
                 {/* Bal oszlop: PlayerInfo - Chessboard - PlayerInfo (66%) */}
                 <div className="flex flex-col lg:flex-[2] gap-3">
                     {/* Felső játékos */}
-                    <div className="w-full max-w-[500px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                    <div className="w-full max-w-[470px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 transition-all duration-300">
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
                         <div className="relative flex justify-start items-center gap-4 z-10">
                             <PlayerInfo 
@@ -152,8 +133,8 @@ export default function ChessGameView({
                     </div>
 
                     {/* Sakktábla - flex-1 hogy kitöltse a helyet */}
-                    <div className="flex-1 w-full max-w-[500px] mx-auto relative group flex items-center justify-center">
-                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+                    <div className="flex-1 w-full max-w-[470px] mx-auto relative group flex items-center justify-center">
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-2xl blur-xl transition-all duration-300" />
                         <div className="relative rounded-xl overflow-hidden border-2 border-teal-500/30 shadow-2xl">
                             <Chessboard
                                 options={{
@@ -206,7 +187,7 @@ export default function ChessGameView({
                     </div>
 
                     {/* Alsó játékos */}
-                    <div className="w-full max-w-[500px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300">
+                    <div className="w-full max-w-[470px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 transition-all duration-300">
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
                         <div className="relative flex justify-start items-center gap-4 z-10">
                             <PlayerInfo 
@@ -247,9 +228,8 @@ export default function ChessGameView({
                             {moveHistory.length <= 1 && onAbort && (
                                 <button
                                     onClick={onAbort}
-                                    className="group relative px-6 py-2.5 bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 font-semibold rounded-lg border border-orange-600/30 hover:border-orange-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 overflow-hidden cursor-pointer"
+                                    className="relative px-6 py-2.5 bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 font-semibold rounded-lg border border-orange-600/30 hover:border-orange-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                                     <span className="relative flex items-center gap-2">
                                         ⛔ Megszakítás
                                     </span>
@@ -260,9 +240,8 @@ export default function ChessGameView({
                             {moveHistory.length > 1 && (
                                 <button
                                     onClick={onOfferDraw}
-                                    className="group relative px-6 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg border border-emerald-600/30 hover:border-emerald-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 overflow-hidden cursor-pointer"
+                                    className="relative px-6 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg border border-emerald-600/30 hover:border-emerald-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                                     <span className="relative flex items-center gap-2">
                                         🤝 Döntetlen
                                     </span>
@@ -273,9 +252,8 @@ export default function ChessGameView({
                             {moveHistory.length > 1 && (
                                 <button
                                     onClick={onSurrender}
-                                    className="group relative px-6 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 font-semibold rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 overflow-hidden cursor-pointer"
+                                    className="relative px-6 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 font-semibold rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                                     <span className="relative flex items-center gap-2">
                                         🏳️ Feladás
                                     </span>

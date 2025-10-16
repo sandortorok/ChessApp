@@ -271,23 +271,26 @@ export default function ChessGame() {
         const elapsed = gameData.started ? (now - lastUpdate) : 0;
         
         let winReason: winReason | null = null;
-        const prevTurn = chessGame.turn() === "w" ? "black" : "white";
+        // A turn UTÁN az aktuális játékos (aki most lépett) már váltott, 
+        // ezért a prevTurn az aki MOST lépett, ELŐTTE volt a körén
+        const currentTurnAfterMove = chessGame.turn() === "w" ? "white" : "black";
+        const playerWhoJustMoved = currentTurnAfterMove === "white" ? "black" : "white";
         const newTimeLeft = { ...gameData.timeLeft };
         
-        // Időkezelés: csökkentjük az eltelt időt és hozzáadjuk az incrementet
-        if (newTimeLeft && newTimeLeft[prevTurn] !== undefined && gameData.started) {
-            newTimeLeft[prevTurn] = Math.max(0, newTimeLeft[prevTurn] - elapsed);
+        // Időkezelés: csökkentjük az eltelt időt ANNAK aki most lépett és hozzáadjuk az incrementet
+        if (newTimeLeft && newTimeLeft[playerWhoJustMoved] !== undefined && gameData.started) {
+            newTimeLeft[playerWhoJustMoved] = Math.max(0, newTimeLeft[playerWhoJustMoved] - elapsed);
             // Hozzáadjuk az incrementet az adatbázisból (másodpercben tárolt, milliszekundumra konvertáljuk)
             const incrementMs = (gameData.increment || 0) * 1000;
-            newTimeLeft[prevTurn] += incrementMs;
+            newTimeLeft[playerWhoJustMoved] += incrementMs;
         }
 
         let status = "ongoing"; // Első lépés után mindig "ongoing"
         let winner: "white" | "black" | "draw" | null = null;
 
-        if (newTimeLeft[prevTurn] === 0 && gameData.started) {
+        if (newTimeLeft[playerWhoJustMoved] === 0 && gameData.started) {
             status = "ended";
-            winner = prevTurn === "white" ? "black" : "white";
+            winner = playerWhoJustMoved === "white" ? "black" : "white";
             winReason = "timeout";
         }
 
@@ -728,6 +731,9 @@ export default function ChessGame() {
     async function confirmSurrender() {
         if (!gameId || !gameData) return;
         
+        // Modal bezárása azonnal
+        setShowSurrenderConfirm(false);
+        
         console.log("Megadás...");
         
         const gameRef = ref(db, `games/${gameId}`);
@@ -751,10 +757,8 @@ export default function ChessGame() {
             
             setWinReason("resignation");
             setShowEndModal(true);
-            setShowSurrenderConfirm(false);
         } catch (err) {
             console.error("Error updating game on surrender:", err);
-            setShowSurrenderConfirm(false);
         }
     }
     // Callback amikor lejár valamelyik játékos ideje
@@ -799,8 +803,6 @@ export default function ChessGame() {
                 viewingHistoryIndex={viewingHistoryIndex}
                 timeLeft={timeLeft}
                 gameStatus={gameData?.status}
-                timeControl={gameData?.timeControl}
-                increment={gameData?.increment}
                 startingElo={gameData?.startingElo}
                 finalElo={gameData?.finalElo}
                 eloChanges={eloChanges}
