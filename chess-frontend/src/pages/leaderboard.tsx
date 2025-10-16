@@ -3,6 +3,8 @@ import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { firestore } from "../firebase/config";
 import { SquarePlus, SquareMinus } from "lucide-react";
 
+const DEFAULT_AVATAR = "emoji:👤";
+
 interface Player {
     uid: string;
     name?: string;
@@ -12,6 +14,7 @@ interface Player {
     wins: number;
     losses: number;
     draws?: number;
+    photoURL?: string;
 }
 
 export default function Leaderboard() {
@@ -37,10 +40,7 @@ export default function Leaderboard() {
                         console.log("No name or email for user:", doc.id);
                         // Check if guest
                         return `Guest ${doc.id.slice(1, 5)}`
-                        
-                        return "Unknown";
-                    };
-                    
+                    };                    
                     playersList.push({
                         uid: doc.id,
                         name: getDisplayName(),
@@ -50,6 +50,7 @@ export default function Leaderboard() {
                         wins: data.wins || 0,
                         losses: data.losses || 0,
                         draws: data.draws || 0,
+                        photoURL: data.photoURL || DEFAULT_AVATAR,
                     });
                 });
 
@@ -95,6 +96,16 @@ export default function Leaderboard() {
         if (elo >= 1600) return "Intermediate";
         if (elo >= 1400) return "Beginner";
         return "Novice";
+    };
+
+    const renderAvatar = (photoURL?: string) => {
+        if (!photoURL || photoURL === DEFAULT_AVATAR) {
+            return <span className="text-2xl">👤</span>;
+        }
+        if (photoURL.startsWith('emoji:')) {
+            return <span className="text-2xl">{photoURL.replace('emoji:', '')}</span>;
+        }
+        return <img src={photoURL} alt="Avatar" className="w-full h-full object-cover" />;
     };
 
     return (
@@ -227,8 +238,8 @@ export default function Leaderboard() {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-xl">
-                                                                👤
+                                                            <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center overflow-hidden border border-emerald-600/30">
+                                                                {renderAvatar(player.photoURL)}
                                                             </div>
                                                             <div>
                                                                 <p className="text-white font-medium">{player.name}</p>

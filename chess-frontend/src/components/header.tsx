@@ -118,7 +118,10 @@ export default function Header() {
         <div className="p-4 border-t border-emerald-600/30">
           {user ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 border border-emerald-600/20">
+              <a
+                href="/profile"
+                className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 border border-emerald-600/20 hover:bg-slate-700/70 hover:border-emerald-600/40 transition-all duration-200 cursor-pointer"
+              >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg overflow-hidden">
                   {avatarURL.startsWith('emoji:') ? (
                     <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>
@@ -136,7 +139,7 @@ export default function Header() {
                     {user.email}
                   </p>
                 </div>
-              </div>
+              </a>
               <button
                 onClick={handleLogout}
                 className="w-full px-4 py-2 text-sm font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-500/30 transition-all duration-200"
@@ -232,7 +235,11 @@ export default function Header() {
               </div>
               <div className="py-6 space-y-4">
                 {user && (
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-emerald-600/20">
+                  <a
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-emerald-600/20 hover:bg-slate-800/70 hover:border-emerald-600/40 transition-all duration-200 cursor-pointer"
+                  >
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0 overflow-hidden">
                       {avatarURL.startsWith('emoji:') ? (
                         <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>
@@ -245,7 +252,7 @@ export default function Header() {
                     <span className="text-sm text-slate-300 truncate flex-1 min-w-0">
                       {user.email}
                     </span>
-                  </div>
+                  </a>
                 )}
                 {user ? (
                   <button
