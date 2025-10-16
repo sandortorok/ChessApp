@@ -3,7 +3,7 @@ import { auth, storage, firestore } from "../firebase/config";
 import { onAuthStateChanged, updateProfile, updatePassword, type User } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { Camera, Volume2, VolumeX, Bell, BellOff, Lock, Globe, Eye, EyeOff, Palette, Save, X } from "lucide-react";
+import { Camera, Volume2, Bell, Lock, Palette, X } from "lucide-react";
 
 // Előre definiált avatar opciók
 const AVATAR_OPTIONS = [
@@ -31,7 +31,6 @@ export default function GeneralSettings() {
   
   // Avatar state
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
