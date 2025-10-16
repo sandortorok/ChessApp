@@ -1,19 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { useState, useEffect } from "react";
+import { Zap, Trophy, Users, BarChart3, Crown } from "lucide-react";
 
 function Home() {
     const user = useAuth();
     const navigate = useNavigate();
-    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            setMousePosition({ x: e.clientX, y: e.clientY });
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, []);
 
     const createNewGame = () => {
         if (!user) {
@@ -26,22 +17,22 @@ function Home() {
 
     const features = [
         {
-            icon: "⚡",
+            icon: Zap,
             title: "Real-time Play",
             description: "Experience instant moves with our blazing-fast game engine"
         },
         {
-            icon: "🏆",
+            icon: Trophy,
             title: "Competitive Ranking",
             description: "Climb the leaderboard and prove your chess mastery"
         },
         {
-            icon: "👥",
+            icon: Users,
             title: "Multiplayer Lobbies",
             description: "Join or create custom games with players worldwide"
         },
         {
-            icon: "📊",
+            icon: BarChart3,
             title: "Track Progress",
             description: "Detailed statistics and game history at your fingertips"
         }
@@ -55,28 +46,27 @@ function Home() {
     ];
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-teal-950 to-gray-900">
+        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900">
             {/* Animated background */}
             <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(20,184,166,0.15),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.15),transparent_50%)]" />
-                
-                {/* Mouse-following glow */}
-                <div 
-                    className="absolute w-96 h-96 rounded-full bg-teal-500/20 blur-3xl transition-all duration-300 pointer-events-none"
-                    style={{
-                        left: mousePosition.x - 192,
-                        top: mousePosition.y - 192,
-                    }}
-                />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(16,185,129,0.15),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(16,185,129,0.15),transparent_50%)]" />
             </div>
 
             {/* Floating chess pieces */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 text-6xl opacity-10 animate-float">♔</div>
-                <div className="absolute top-40 right-20 text-5xl opacity-10 animate-float delay-1000">♕</div>
-                <div className="absolute bottom-32 left-1/4 text-7xl opacity-10 animate-float delay-2000">♖</div>
-                <div className="absolute bottom-20 right-1/3 text-6xl opacity-10 animate-float delay-3000">♗</div>
+                <div className="absolute top-20 left-10 opacity-10 animate-float text-white">
+                    <Crown size={64} />
+                </div>
+                <div className="absolute top-40 right-20 opacity-10 animate-float delay-1000 text-white">
+                    <Crown size={56} />
+                </div>
+                <div className="absolute bottom-32 left-1/4 opacity-10 animate-float delay-2000 text-white">
+                    <Crown size={72} />
+                </div>
+                <div className="absolute bottom-20 right-1/3 opacity-10 animate-float delay-3000 text-white">
+                    <Crown size={64} />
+                </div>
             </div>
 
             {/* Hero Section */}
@@ -85,11 +75,11 @@ function Home() {
                     {/* Main heading */}
                     <div className="mb-8">
                         <h1 className="text-7xl md:text-8xl lg:text-9xl font-bold mb-6">
-                            <span className="inline-block bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent animate-gradient">
+                            <span className="inline-block bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-400 bg-clip-text animate-gradient">
                                 Chess Arena
                             </span>
                         </h1>
-                        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
                             Master the ancient game in a modern battlefield. Challenge players worldwide in real-time matches.
                         </p>
                     </div>
@@ -98,10 +88,9 @@ function Home() {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
                         <button
                             onClick={createNewGame}
-                            className="group relative px-8 py-4 text-lg font-semibold text-white overflow-hidden rounded-xl min-w-[200px]"
+                            className="group relative px-8 py-4 bg-slate-800/80 hover:bg-slate-700/80 text-white hover:text-gray-100 text-lg font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm min-w-[200px]"
                         >
-                            <span className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 transition-transform duration-300 group-hover:scale-105" />
-                            <span className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                             <span className="relative flex items-center justify-center gap-2">
                                 {user ? "Start Playing" : "Get Started"}
                                 <span className="transform group-hover:translate-x-1 transition-transform">→</span>
@@ -110,9 +99,9 @@ function Home() {
                         
                         <button
                             onClick={() => navigate("/lobby")}
-                            className="group relative px-8 py-4 text-lg font-semibold text-teal-400 overflow-hidden rounded-xl border-2 border-teal-500/50 hover:border-teal-500 transition-all duration-300 min-w-[200px]"
+                            className="group relative px-8 py-4 bg-slate-800/60 hover:bg-slate-700/60 text-lg font-semibold text-white hover:text-gray-100 overflow-hidden rounded-xl border border-emerald-500/30 hover:border-emerald-500/50 transition-all duration-300 min-w-[200px] cursor-pointer"
                         >
-                            <span className="absolute inset-0 bg-teal-500/0 group-hover:bg-teal-500/10 transition-colors duration-300" />
+                            <span className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-colors duration-300" />
                             <span className="relative">Browse Lobbies</span>
                         </button>
                     </div>
@@ -122,14 +111,14 @@ function Home() {
                         {stats.map((stat, index) => (
                             <div
                                 key={index}
-                                className="relative backdrop-blur-xl bg-gray-900/30 rounded-2xl p-6 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300 group"
+                                className="relative backdrop-blur-xl bg-slate-800/50 rounded-2xl p-6 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 group"
                             >
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative">
-                                    <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+                                    <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text mb-2">
                                         {stat.value}
                                     </div>
-                                    <div className="text-sm text-gray-400">{stat.label}</div>
+                                    <div className="text-sm text-slate-400">{stat.label}</div>
                                 </div>
                             </div>
                         ))}
@@ -141,11 +130,11 @@ function Home() {
             <div className="relative z-10 py-20 px-6">
                 <div className="max-w-6xl mx-auto">
                     <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
-                        <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text">
                             Why Chess Arena?
                         </span>
                     </h2>
-                    <p className="text-gray-400 text-center mb-16 max-w-2xl mx-auto">
+                    <p className="text-slate-400 text-center mb-16 max-w-2xl mx-auto">
                         Experience chess like never before with cutting-edge features designed for modern players
                     </p>
 
@@ -153,17 +142,17 @@ function Home() {
                         {features.map((feature, index) => (
                             <div
                                 key={index}
-                                className="group relative backdrop-blur-xl bg-gray-900/30 rounded-2xl p-6 border border-teal-500/20 hover:border-teal-500/40 transition-all duration-300 hover:transform hover:-translate-y-2"
+                                className="group relative backdrop-blur-xl bg-slate-800/50 rounded-2xl p-6 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 hover:transform hover:-translate-y-2"
                             >
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative">
-                                    <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform">
-                                        {feature.icon}
+                                    <div className="mb-4 transform group-hover:scale-110 transition-transform text-emerald-400">
+                                        <feature.icon size={48} strokeWidth={1.5} />
                                     </div>
                                     <h3 className="text-xl font-semibold text-white mb-2">
                                         {feature.title}
                                     </h3>
-                                    <p className="text-gray-400 text-sm">
+                                    <p className="text-slate-400 text-sm">
                                         {feature.description}
                                     </p>
                                 </div>
@@ -176,24 +165,23 @@ function Home() {
             {/* CTA Section */}
             <div className="relative z-10 py-20 px-6">
                 <div className="max-w-4xl mx-auto">
-                    <div className="relative backdrop-blur-xl bg-gray-900/50 rounded-3xl p-12 border border-teal-500/20 overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/10" />
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
+                    <div className="relative backdrop-blur-xl bg-slate-800/60 rounded-3xl p-12 border border-emerald-500/30 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-500/10" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl" />
                         
                         <div className="relative text-center">
                             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
                                 Ready to Dominate the Board?
                             </h2>
-                            <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
+                            <p className="text-slate-300 mb-8 max-w-2xl mx-auto">
                                 Join thousands of players in the ultimate chess experience. Create your account and start your journey to grandmaster today.
                             </p>
                             <button
                                 onClick={() => navigate(user ? "/lobby" : "/register")}
-                                className="group relative px-8 py-4 text-lg font-semibold text-white overflow-hidden rounded-xl"
+                                className="group relative px-8 py-4 bg-slate-800/80 hover:bg-slate-700/80 text-white hover:text-gray-100 text-lg font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm"
                             >
-                                <span className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 transition-transform duration-300 group-hover:scale-105" />
-                                <span className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                                 <span className="relative flex items-center justify-center gap-2">
                                     {user ? "Enter Arena" : "Join Now - It's Free"}
                                     <span className="transform group-hover:translate-x-1 transition-transform">→</span>

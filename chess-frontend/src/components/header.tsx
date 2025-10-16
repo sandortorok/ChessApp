@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { auth } from "../firebase/config";
+import { auth, firestore } from "../firebase/config";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 const navigation = [
@@ -14,19 +15,59 @@ const navigation = [
   { name: "Leaderboard", href: "/leaderboard" },
 ];
 
+const DEFAULT_AVATAR = "emoji:👤";
+
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [avatarURL, setAvatarURL] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       console.log("Auth state changed, user:", firebaseUser);
+      
+      // Load avatar from Firestore
+      if (firebaseUser) {
+        const userDocRef = doc(firestore, "users", firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.photoURL) {
+            setAvatarURL(data.photoURL);
+          } else if (firebaseUser.photoURL) {
+            setAvatarURL(firebaseUser.photoURL);
+          } else {
+            setAvatarURL(DEFAULT_AVATAR);
+          }
+        } else if (firebaseUser.photoURL) {
+          setAvatarURL(firebaseUser.photoURL);
+        } else {
+          setAvatarURL(DEFAULT_AVATAR);
+        }
+      } else {
+        setAvatarURL("");
+      }
     });
-    return () => unsubscribe();
+    
+    // Listen for avatar updates from other components
+    const handleAvatarUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.photoURL) {
+        setAvatarURL(customEvent.detail.photoURL);
+      }
+    };
+    
+    window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    
+    return () => {
+      unsubscribe();
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+    };
   }, []);
-  
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -78,8 +119,14 @@ export default function Header() {
           {user ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 border border-emerald-600/20">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg">
-                  {user.email?.[0].toUpperCase() || "U"}
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg overflow-hidden">
+                  {avatarURL.startsWith('emoji:') ? (
+                    <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>
+                  ) : avatarURL ? (
+                    <img src={avatarURL} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl">👤</span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">
@@ -186,8 +233,14 @@ export default function Header() {
               <div className="py-6 space-y-4">
                 {user && (
                   <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-emerald-600/20">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0">
-                      {user.email?.[0].toUpperCase() || "U"}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0 overflow-hidden">
+                      {avatarURL.startsWith('emoji:') ? (
+                        <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>
+                      ) : avatarURL ? (
+                        <img src={avatarURL} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl">👤</span>
+                      )}
                     </div>
                     <span className="text-sm text-slate-300 truncate flex-1 min-w-0">
                       {user.email}

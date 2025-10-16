@@ -1,10 +1,13 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { ref, onValue } from "firebase/database";
-import { db } from "../firebase/config";
+import { db, auth } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import PlayerProfileModal from "../components/PlayerProfileModal";
 
 export default function Lobby() {
     const [games, setGames] = useState<any[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const [profileDropdown, setProfileDropdown] = useState<{
         player: any;
         position: { top: number; left: number };
@@ -13,7 +16,6 @@ export default function Lobby() {
         openUpwards?: boolean;
     } | null>(null);
     const navigate = useNavigate();
-    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Helper: check if player is guest (uid starts with "guest_")
     const isGuest = (player: any) => {
@@ -22,11 +24,6 @@ export default function Lobby() {
 
     // Helper: check if game is full
     const isFull = (game: any) => game.players?.white && game.players?.black;
-
-    // Helper: get button label
-    const getButtonLabel = (game: any) => {
-        return isFull(game) ? "👁 Spectate" : "➕ Join";
-    };
 
     // Helper: get button color based on full/not full
     const getButtonClass = (game: any) => {
@@ -63,22 +60,25 @@ export default function Lobby() {
         }
     };
 
-    // Close dropdown when clicking outside
+    // Helper: format timestamp to relative time
+    const formatTimeAgo = (timestamp: number) => {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) return `${days}d ago`;
+        if (hours > 0) return `${hours}h ago`;
+        if (minutes > 0) return `${minutes}m ago`;
+        return `${seconds}s ago`;
+    };
+
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setProfileDropdown(null);
-            }
-        }
-
-        if (profileDropdown) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [profileDropdown]);
+        const unsubAuth = onAuthStateChanged(auth, (user) => setCurrentUser(user));
+        return () => unsubAuth();
+    }, []);
 
     useEffect(() => {
         const gamesRef = ref(db, "games");
@@ -154,9 +154,17 @@ export default function Lobby() {
                         </div>
                         <button
                             onClick={createGame}
-                            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 cursor-pointer transition-all shadow-lg hover:shadow-emerald-500/50"
+                            className="group relative px-8 py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-emerald-400 hover:text-emerald-300 font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm"
                         >
-                            + Create Game
+                            {/* Animated background shine */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                            
+                            <span className="relative flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create Game
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -171,9 +179,17 @@ export default function Lobby() {
                         <p className="text-emerald-300/70 mb-6">Be the first to create a game!</p>
                         <button
                             onClick={createGame}
-                            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all cursor-pointer"
+                            className="group relative px-8 py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-emerald-400 hover:text-emerald-300 font-bold rounded-xl border border-emerald-600/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 active:scale-95 overflow-hidden backdrop-blur-sm"
                         >
-                            + Create Game
+                            {/* Animated background shine */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                            
+                            <span className="relative flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create Game
+                            </span>
                         </button>
                     </div>
                 ) : (
@@ -187,12 +203,17 @@ export default function Lobby() {
                                     <div className="flex items-center gap-3">
                                         <img
                                             className="w-10 h-10 rounded-full ring-2 ring-emerald-600/50"
-                                            src="/LobbyIcon2.png"
+                                            src="/LobbyIcon.png"
                                             alt="chess"
                                         />
                                         <div>
                                             <p className="text-sm font-medium text-emerald-300/70">Game</p>
                                             <p className="text-white font-mono text-sm">{game.id.slice(-6)}</p>
+                                            {game.createdAt && (
+                                                <p className="text-emerald-300/50 text-xs mt-0.5">
+                                                    🕒 {formatTimeAgo(game.createdAt)}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <span className={`text-sm font-medium px-3 py-1 rounded-full ${getStatusColor(game.status)}`}>
@@ -202,14 +223,23 @@ export default function Lobby() {
 
                                 <div className="space-y-3">
                                     <div 
-                                        className="bg-slate-900/50 border border-emerald-600/20 rounded p-3 hover:border-emerald-500/40 transition-colors cursor-pointer"
+                                        className={`bg-slate-900/50 border rounded p-3 hover:border-emerald-500/40 transition-colors cursor-pointer relative ${
+                                            game.players?.white?.uid === currentUser?.uid
+                                                ? 'border-amber-500/60 bg-amber-500/5 ring-2 ring-amber-500/20'
+                                                : 'border-emerald-600/20'
+                                        }`}
                                         onClick={(e) => handlePlayerClick(e, game.players?.white, game, "white")}
                                     >
+                                        {game.players?.white?.uid === currentUser?.uid && (
+                                            <div className="absolute -top-2 -right-2 bg-amber-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                                                YOU
+                                            </div>
+                                        )}
                                         <p className="text-xs text-emerald-300/60 mb-1">White</p>
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
                                                 {game.players?.white
-                                                    ? game.players.white.name || (game.players.white.uid ? "Guest" : "Waiting")
+                                                    ? game.players.white.displayName || (game.players.white.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
                                             {game.players?.white && (
@@ -245,9 +275,18 @@ export default function Lobby() {
                                     </div>
 
                                     <div 
-                                        className="bg-slate-900/50 border border-emerald-600/20 rounded p-3 hover:border-emerald-500/40 transition-colors cursor-pointer"
+                                        className={`bg-slate-900/50 border rounded p-3 hover:border-emerald-500/40 transition-colors cursor-pointer relative ${
+                                            game.players?.black?.uid === currentUser?.uid
+                                                ? 'border-amber-500/60 bg-amber-500/5 ring-2 ring-amber-500/20'
+                                                : 'border-emerald-600/20'
+                                        }`}
                                         onClick={(e) => handlePlayerClick(e, game.players?.black, game, "black")}
                                     >
+                                        {game.players?.black?.uid === currentUser?.uid && (
+                                            <div className="absolute -top-2 -right-2 bg-amber-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                                                YOU
+                                            </div>
+                                        )}
                                         <p className="text-xs text-emerald-300/60 mb-1">Black</p>
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
@@ -284,9 +323,31 @@ export default function Lobby() {
 
                                 <button 
                                     onClick={() => joinGame(game.id)}
-                                    className={`w-full mt-4 py-2.5 font-medium rounded transition-all border cursor-pointer ${getButtonClass(game)}`}
+                                    className={`group relative w-full mt-4 py-2.5 font-bold rounded-lg transition-all duration-300 border cursor-pointer transform hover:scale-[1.02] active:scale-95 overflow-hidden ${getButtonClass(game)}`}
                                 >
-                                    {getButtonLabel(game)}
+                                    {/* Animated background shine */}
+                                    <div className={`absolute inset-0 bg-gradient-to-r from-transparent to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ${
+                                        isFull(game) ? 'via-blue-400/10' : 'via-emerald-400/10'
+                                    }`} />
+                                    
+                                    <span className="relative flex items-center justify-center gap-2">
+                                        {isFull(game) ? (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                Spectate
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                Join
+                                            </>
+                                        )}
+                                    </span>
                                 </button>
                             </div>
                         ))}
@@ -294,129 +355,17 @@ export default function Lobby() {
                 )}
             </div>
 
-            {/* Profile Dropdown */}
+            {/* Profile Modal */}
             {profileDropdown && (
-                <div
-                    ref={dropdownRef}
-                    className="fixed z-50 bg-slate-800 border border-emerald-600/50 rounded-lg shadow-xl shadow-emerald-500/20 p-4 min-w-[280px] max-h-[80vh] overflow-y-auto"
-                    style={{
-                        [profileDropdown.openUpwards ? 'bottom' : 'top']: profileDropdown.openUpwards 
-                            ? `${window.innerHeight - profileDropdown.position.top}px`
-                            : `${profileDropdown.position.top}px`,
-                        left: `${profileDropdown.position.left}px`,
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-emerald-600/20 flex items-center justify-center text-2xl">
-                            {isGuest(profileDropdown.player) ? "🎮" : "👤"}
-                        </div>
-                        <div>
-                            <p className="text-white font-semibold">
-                                {profileDropdown.player.name || "Guest"}
-                            </p>
-                            {!isGuest(profileDropdown.player) && (
-                                <div className="flex items-center gap-2">
-                                    <p className="text-emerald-400 text-sm font-medium">
-                                        ELO: {
-                                            profileDropdown.gameData?.finalElo?.[profileDropdown.playerColor!] ||
-                                            profileDropdown.player.elo ||
-                                            1200
-                                        }
-                                    </p>
-                                    {profileDropdown.gameData?.status === "ended" && 
-                                     profileDropdown.gameData?.finalElo?.[profileDropdown.playerColor!] && 
-                                     profileDropdown.gameData?.startingElo?.[profileDropdown.playerColor!] && (
-                                        <span className={`text-xs font-bold ${
-                                            (profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
-                                             profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 
-                                                ? 'text-green-400' 
-                                                : 'text-red-400'
-                                        }`}>
-                                            ({(profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
-                                               profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 ? '+' : ''}
-                                            {profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
-                                             profileDropdown.gameData.startingElo[profileDropdown.playerColor!]})
-                                        </span>
-                                    )}
-                                </div>
-                            )}
-                            {isGuest(profileDropdown.player) && (
-                                <p className="text-slate-400 text-sm">
-                                    🎮 Guest Player
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    
-                    <div className="border-t border-emerald-600/30 pt-3 space-y-2">
-                        {profileDropdown.gameData?.startingElo?.[profileDropdown.playerColor!] && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-emerald-300/70">Starting ELO:</span>
-                                <span className="text-white font-semibold">
-                                    {profileDropdown.gameData.startingElo[profileDropdown.playerColor!]}
-                                </span>
-                            </div>
-                        )}
-                        {profileDropdown.gameData?.finalElo?.[profileDropdown.playerColor!] && 
-                         profileDropdown.gameData?.startingElo?.[profileDropdown.playerColor!] && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-emerald-300/70">Final ELO:</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-white font-semibold">
-                                        {profileDropdown.gameData.finalElo[profileDropdown.playerColor!]}
-                                    </span>
-                                    <span className={`text-xs font-bold ${
-                                        (profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
-                                         profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 
-                                            ? 'text-green-400' 
-                                            : 'text-red-400'
-                                    }`}>
-                                        ({(profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
-                                           profileDropdown.gameData.startingElo[profileDropdown.playerColor!]) > 0 ? '+' : ''}
-                                        {profileDropdown.gameData.finalElo[profileDropdown.playerColor!] - 
-                                         profileDropdown.gameData.startingElo[profileDropdown.playerColor!]})
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-                        <div className="flex justify-between text-sm">
-                            <span className="text-emerald-300/70">User ID:</span>
-                            <span className="text-white font-mono">{profileDropdown.player.uid?.slice(0, 8) || "N/A"}</span>
-                        </div>
-                        {profileDropdown.player.wins !== undefined && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-emerald-300/70">Wins:</span>
-                                <span className="text-white">{profileDropdown.player.wins || 0}</span>
-                            </div>
-                        )}
-                        {profileDropdown.player.losses !== undefined && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-emerald-300/70">Losses:</span>
-                                <span className="text-white">{profileDropdown.player.losses || 0}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
+                <PlayerProfileModal
+                    player={profileDropdown.player}
+                    gameData={profileDropdown.gameData}
+                    playerColor={profileDropdown.playerColor}
+                    position={profileDropdown.position}
+                    openUpwards={profileDropdown.openUpwards}
+                    onClose={() => setProfileDropdown(null)}
+                />
             )}
-
-            {/* Custom Scrollbar Style */}
-            <style>{`
-                /* Custom scrollbar for dropdown */
-                .fixed.z-50::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .fixed.z-50::-webkit-scrollbar-track {
-                    background: rgba(15, 23, 42, 0.5);
-                    border-radius: 3px;
-                }
-                .fixed.z-50::-webkit-scrollbar-thumb {
-                    background: rgba(16, 185, 129, 0.5);
-                    border-radius: 3px;
-                }
-                .fixed.z-50::-webkit-scrollbar-thumb:hover {
-                    background: rgba(16, 185, 129, 0.7);
-                }
-            `}</style>
         </div>
     );
 }

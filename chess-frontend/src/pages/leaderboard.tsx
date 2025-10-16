@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { firestore } from "../firebase/config";
+import { SquarePlus, SquareMinus } from "lucide-react";
 
 interface Player {
     uid: string;
-    name: string;
+    name?: string;
+    displayName?: string;
     email?: string;
     elo: number;
     wins: number;
@@ -26,9 +28,23 @@ export default function Leaderboard() {
                 const playersList: Player[] = [];
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    
+                    // Helper to get display name
+                    const getDisplayName = () => {
+                        if (data.displayName) return data.displayName;
+                        if (data.name) return data.name;
+                        if (data.email) return data.email;
+                        console.log("No name or email for user:", doc.id);
+                        // Check if guest
+                        return `Guest ${doc.id.slice(1, 5)}`
+                        
+                        return "Unknown";
+                    };
+                    
                     playersList.push({
                         uid: doc.id,
-                        name: data.name || data.email || "Unknown",
+                        name: getDisplayName(),
+                        displayName: data.displayName,
                         email: data.email,
                         elo: data.elo || 1200,
                         wins: data.wins || 0,
@@ -126,8 +142,14 @@ export default function Leaderboard() {
                                     </div>
                                     <div className="text-sm text-emerald-300/60">{getEloRank(players[1].elo)}</div>
                                     <div className="mt-3 flex justify-center gap-4 text-xs text-slate-300">
-                                        <span>🎯 {players[1].wins}W</span>
-                                        <span>❌ {players[1].losses}L</span>
+                                        <span className="flex items-center gap-1">
+                                            <SquarePlus size={14} className="text-green-500" />
+                                            <span className="text-green-400">{players[1].wins}W</span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <SquareMinus size={14} className="text-red-500" />
+                                            <span className="text-red-400">{players[1].losses}L</span>
+                                        </span>
                                     </div>
                                 </div>
 
@@ -140,8 +162,14 @@ export default function Leaderboard() {
                                     </div>
                                     <div className="text-sm text-emerald-300/60">{getEloRank(players[0].elo)}</div>
                                     <div className="mt-4 flex justify-center gap-4 text-sm text-slate-300">
-                                        <span>🎯 {players[0].wins}W</span>
-                                        <span>❌ {players[0].losses}L</span>
+                                        <span className="flex items-center gap-1">
+                                            <SquarePlus size={16} className="text-green-500" />
+                                            <span className="text-green-400">{players[0].wins}W</span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <SquareMinus size={16} className="text-red-500" />
+                                            <span className="text-red-400">{players[0].losses}L</span>
+                                        </span>
                                     </div>
                                 </div>
 
@@ -154,8 +182,14 @@ export default function Leaderboard() {
                                     </div>
                                     <div className="text-sm text-emerald-300/60">{getEloRank(players[2].elo)}</div>
                                     <div className="mt-3 flex justify-center gap-4 text-xs text-slate-300">
-                                        <span>🎯 {players[2].wins}W</span>
-                                        <span>❌ {players[2].losses}L</span>
+                                        <span className="flex items-center gap-1">
+                                            <SquarePlus size={14} className="text-green-500" />
+                                            <span className="text-green-400">{players[2].wins}W</span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <SquareMinus size={14} className="text-red-500" />
+                                            <span className="text-red-400">{players[2].losses}L</span>
+                                        </span>
                                     </div>
                                 </div>
                             </div>

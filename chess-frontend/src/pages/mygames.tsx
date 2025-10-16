@@ -23,6 +23,21 @@ export default function MyGames() {
         return player?.uid?.startsWith("guest_");
     };
 
+    // Helper: format timestamp to relative time
+    const formatTimeAgo = (timestamp: number) => {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) return `${days}d ago`;
+        if (hours > 0) return `${hours}h ago`;
+        if (minutes > 0) return `${minutes}m ago`;
+        return `${seconds}s ago`;
+    };
+
     // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -146,6 +161,11 @@ export default function MyGames() {
                                         <div>
                                             <p className="text-sm font-medium text-emerald-300/70">Game</p>
                                             <p className="text-white font-mono text-sm">{game.id.slice(-6)}</p>
+                                            {game.updatedAt && (
+                                                <p className="text-emerald-300/50 text-xs mt-0.5">
+                                                    🕒 {formatTimeAgo(game.updatedAt)}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
