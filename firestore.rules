@@ -2,31 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Users collection - csak bejelentkezett felhasználók
-    match /users/{userId} {
-      // Saját profil olvasása és írása
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Mások profiljának olvasása (pl. leaderboard, player info)
-      allow read: if request.auth != null;
-    }
-    
-    // Games collection - játék adatok
-    match /games/{gameId} {
-      // Bejelentkezett felhasználók olvashatnak minden játékot
-      allow read: if request.auth != null;
-      // Csak a játékban résztvevők írhatnak
-      allow write: if request.auth != null && (
-        request.auth.uid == resource.data.players.white.uid ||
-        request.auth.uid == resource.data.players.black.uid
-      );
-      // Új játék létrehozása
-      allow create: if request.auth != null;
-    }
-    
-    // Minden más dokumentum - alapértelmezett védelem
+    // Minden dokumentumhoz teljes hozzáférés bejelentkezett felhasználóknak
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }
