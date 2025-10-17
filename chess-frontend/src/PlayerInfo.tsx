@@ -6,6 +6,8 @@ interface PlayerInfoProps {
   player: {
     uid?: string;
     name?: string;
+    displayName?: string | null;
+    email?: string | null;
     elo?: number;
     wins?: number;
     losses?: number;
@@ -74,7 +76,7 @@ export default function PlayerInfo({ color, player, position = "top", startingEl
       >
         <div className="flex-1 min-w-0">
           <div className="text-white font-semibold text-sm truncate">
-            {player?.name ? player.name : player?.uid ? "Guest" : "Waiting..."}
+            {player?.name || player?.displayName || player?.email?.split('@')[0] || (player?.uid ? "Guest" : "Waiting...")}
           </div>
         </div>
 

@@ -274,7 +274,7 @@ export default function Lobby() {
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
                                                 {game.players?.white
-                                                    ? game.players.white.name || (game.players.white.uid ? "Guest" : "Waiting")
+                                                    ? game.players.white.name || game.players.white.displayName || game.players.white.email?.split('@')[0] || (game.players.white.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
                                             {game.players?.white && (
@@ -326,7 +326,7 @@ export default function Lobby() {
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
                                                 {game.players?.black
-                                                    ? game.players.black.name || (game.players.black.uid ? "Guest" : "Waiting")
+                                                    ? game.players.black.name || game.players.black.displayName || game.players.black.email?.split('@')[0] || (game.players.black.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
                                             {game.players?.black && (

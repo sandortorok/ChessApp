@@ -228,7 +228,7 @@ export default function MyGames() {
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
                                                 {game.players?.white
-                                                    ? game.players.white.name || (game.players.white.uid ? "Guest" : "Waiting")
+                                                    ? game.players.white.name || game.players.white.displayName || game.players.white.email?.split('@')[0] || (game.players.white.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
                                             {game.players?.white && (
@@ -303,7 +303,7 @@ export default function MyGames() {
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
                                                 {game.players?.black
-                                                    ? game.players.black.name || (game.players.black.uid ? "Guest" : "Waiting")
+                                                    ? game.players.black.name || game.players.black.displayName || game.players.black.email?.split('@')[0] || (game.players.black.uid ? "Guest" : "Waiting")
                                                     : "Waiting"}
                                             </p>
                                             {game.players?.black && (
@@ -354,7 +354,7 @@ export default function MyGames() {
                         </div>
                         <div>
                             <p className="text-white font-semibold">
-                                {profileDropdown.player.name || "Guest"}
+                                {profileDropdown.player.name || profileDropdown.player.displayName || profileDropdown.player.email?.split('@')[0] || "Guest"}
                             </p>
                             {!isGuest(profileDropdown.player) && (
                                 <div className="flex items-center gap-2">

@@ -96,7 +96,7 @@ export default function PlayerProfileModal({
         
         <div>
           <p className="text-white font-semibold">
-            {player.name || player.displayName || "Guest"}
+            {player.name || player.displayName || player.email?.split('@')[0] || "Guest"}
           </p>
           {!isGuest(player) && (
             <div className="flex items-center gap-2">

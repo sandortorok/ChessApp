@@ -30,6 +30,7 @@ export interface MoveHistoryType {
 }
 export type Player = {
     uid: string;
+    name?: string; // Ezt használja a PlayerInfo komponens
     displayName: string | null;
     email: string | null;
     elo: number;
