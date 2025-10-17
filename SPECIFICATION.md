@@ -1326,50 +1326,790 @@ match /users/{userId} {
 
 ---
 
-## 15. Összefoglalás
+## 15. Tervezési Minták
 
-### 15.1 Projekt Méret
+### 15.1 Jelenlegi Tervezési Minták
+
+#### 15.1.1 Singleton Pattern
+**Használat**: Service layer
+```typescript
+// gameService.ts
+class GameService {
+  // ... implementation
+}
+export const gameService = new GameService();
+
+// playerService.ts
+class PlayerService {
+  // ... implementation
+}
+export const playerService = new PlayerService();
+```
+
+**Előnyök**:
+- ✅ Egyetlen service instance az alkalmazásban
+- ✅ Központosított state és logika
+- ✅ Könnyű tesztelhetőség (mockable)
+
+**Alkalmazás**:
+- `gameService` - Játék műveletek
+- `playerService` - Játékos műveletek
+- `aiGameService` - AI játék kezelés
+
+---
+
+#### 15.1.2 Service Layer Pattern
+**Használat**: Üzleti logika elkülönítése
+
+```typescript
+// ChessGame.tsx (Controller)
+const handleMove = async () => {
+  await gameService.updateGameInDb(gameId, gameData, chessGame, fen, move);
+};
+
+// gameService.ts (Service)
+class GameService {
+  async updateGameInDb(...) {
+    // Üzleti logika: validálás, időszámítás, ELO, Firebase
+  }
+}
+```
+
+**Előnyök**:
+- ✅ Separation of Concerns
+- ✅ Újrafelhasználható logika
+- ✅ Könnyen tesztelhető
+- ✅ Komponensek egyszerűbbek
+
+**Alkalmazás**:
+- Játék műveletek (create, update, end)
+- Játékos műveletek (join, getPlayerData)
+- AI műveletek (Lichess API hívások)
+
+---
+
+#### 15.1.3 Presentational & Container Components
+**Használat**: UI és logika szétválasztása
+
+```typescript
+// ChessGame.tsx (Container - Smart Component)
+const ChessGame = () => {
+  // State, Firebase listeners, game logic
+  const [chessPosition, setChessPosition] = useState(...)
+  const [gameData, setGameData] = useState(...)
+  // ...
+  return <ChessGameView {...props} />;
+}
+
+// ChessGameView.tsx (Presentational - Dumb Component)
+const ChessGameView = (props) => {
+  // Csak renderelés, nincs business logic
+  return <div>...</div>;
+}
+```
+
+**Előnyök**:
+- ✅ Tisztább komponens struktúra
+- ✅ UI könnyen újrafelhasználható
+- ✅ Könnyebb tesztelés
+
+**Alkalmazás**:
+- `ChessGame` (logika) + `ChessGameView` (UI)
+- `PlayerInfo` (prezentációs)
+- `ChessClock` (prezentációs)
+
+---
+
+#### 15.1.4 Observer Pattern (Firebase Real-time)
+**Használat**: Real-time adatszinkronizáció
+
+```typescript
+// Firebase listener (Observer)
+useEffect(() => {
+  const gameRef = ref(db, `games/${gameId}`);
+  const unsubscribe = onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    setGameData(data); // Automatikus UI frissítés
+  });
+  return () => unsubscribe(); // Cleanup
+}, [gameId]);
+```
+
+**Előnyök**:
+- ✅ Automatikus UI frissítés
+- ✅ Multi-user real-time sync
+- ✅ Event-driven architecture
+
+**Alkalmazás**:
+- Játék állapot (lépések, idő, status)
+- Játékos csatlakozás
+- Chat üzenetek (placeholder)
+
+---
+
+#### 15.1.5 Custom Hooks Pattern
+**Használat**: Logika újrafelhasználás
+
+```typescript
+// useAuth.ts
+export const useAuth = () => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
+  
+  return { currentUser, loading };
+};
+
+// Használat komponensben
+const { currentUser, loading } = useAuth();
+```
+
+**Előnyök**:
+- ✅ Logika megosztás komponensek között
+- ✅ Tisztább komponensek
+- ✅ Könnyebb tesztelés
+
+**Alkalmazás**:
+- `useAuth()` - Authentication state
+- 🔮 Potenciális: `useGame(gameId)`, `usePlayer(userId)`
+
+---
+
+#### 15.1.6 Composition Pattern
+**Használat**: Layout komponensek
+
+```typescript
+// Layout.tsx
+const Layout = ({ children }) => {
+  return (
+    <div>
+      <Header />
+      <main>{children}</main>
+    </div>
+  );
+};
+
+// Használat
+<Layout>
+  <Home />
+</Layout>
+```
+
+**Előnyök**:
+- ✅ Flexibilis komponens struktúra
+- ✅ Újrafelhasználható layout
+- ✅ Children prop pattern
+
+**Alkalmazás**:
+- `Layout` komponens (Header + content wrapper)
+- Modal komponensek (backdrop + content)
+
+---
+
+#### 15.1.7 Strategy Pattern (implicit)
+**Használat**: ELO számítás, game end logika
+
+```typescript
+// gameService.ts
+getDrawReason(chessGame: Chess): winReason | null {
+  if (chessGame.isStalemate()) return "stalemate";
+  if (chessGame.isThreefoldRepetition()) return "threefoldRepetition";
+  if (chessGame.isInsufficientMaterial()) return "insufficientMaterial";
+  if (chessGame.isDraw()) return "draw";
+  return null;
+}
+```
+
+**Előnyök**:
+- ✅ Különböző algoritmusok (stalemate, checkmate, timeout)
+- ✅ Könnyen bővíthető új win conditions-el
+
+**Alkalmazás**:
+- Game end detekció (9 különböző ok)
+- ELO számítás (győzelem, vereség, döntetlen)
+
+---
+
+#### 15.1.8 Module Pattern
+**Használat**: Service exports
+
+```typescript
+// services/index.ts
+export { gameService } from './gameService';
+export { playerService } from './playerService';
+export { aiGameService } from './aiGameService';
+export * from './lichessService';
+export * from './userService';
+
+// Használat
+import { gameService, playerService } from '@/services';
+```
+
+**Előnyök**:
+- ✅ Központosított exports
+- ✅ Tisztább imports
+- ✅ Namespace protection
+
+---
+
+### 15.2 Hiányzó Tervezési Minták (Javaslatok)
+
+#### 15.2.1 Repository Pattern
+**Cél**: Adatbázis műveletek absztrakciója
+
+```typescript
+// Ajánlott implementáció
+class GameRepository {
+  async findById(gameId: string): Promise<Game | null> { }
+  async save(game: Game): Promise<void> { }
+  async update(gameId: string, updates: Partial<Game>): Promise<void> { }
+  async delete(gameId: string): Promise<void> { }
+  async findByUserId(userId: string): Promise<Game[]> { }
+}
+
+class UserRepository {
+  async findById(userId: string): Promise<UserProfile | null> { }
+  async save(user: UserProfile): Promise<void> { }
+  async updateElo(userId: string, elo: number): Promise<void> { }
+  async getTopPlayers(limit: number): Promise<UserProfile[]> { }
+}
+```
+
+**Előnyök**:
+- ✅ Firebase specifikus logika elrejtése
+- ✅ Könnyebb váltás más DB-re
+- ✅ Mockable teszteléshez
+- ✅ Centralizált query logika
+
+**Jelenlegi probléma**: Firebase hívások szétszórva a service-ekben
+
+---
+
+#### 15.2.2 Factory Pattern
+**Cél**: Komplex objektumok létrehozása
+
+```typescript
+// Ajánlott implementáció
+class GameFactory {
+  createHumanGame(settings: GameSettings): Game {
+    return {
+      fen: INITIAL_FEN,
+      moves: [],
+      players: { white: null, black: null },
+      status: "waiting",
+      timeControl: settings.timeControl,
+      opponentType: "human",
+      // ... default values
+    };
+  }
+  
+  createAIGame(settings: AIGameSettings): Game {
+    return {
+      ...this.createHumanGame(settings),
+      opponentType: "ai",
+      lichessGameId: null,
+    };
+  }
+}
+
+class PlayerFactory {
+  createPlayerFromFirebaseUser(user: User): Player {
+    return {
+      uid: user.uid,
+      name: user.displayName || user.email,
+      displayName: user.displayName,
+      email: user.email,
+      elo: 1200, // Default
+      wins: 0,
+      losses: 0,
+      draws: 0,
+    };
+  }
+}
+```
+
+**Előnyök**:
+- ✅ Konzisztens objektum létrehozás
+- ✅ Default értékek központosítása
+- ✅ Könnyebb tesztelés
+
+**Jelenlegi probléma**: Objektum létrehozás szétszórva (gameService, playerService)
+
+---
+
+#### 15.2.3 Facade Pattern
+**Cél**: Komplex API-k egyszerűsítése
+
+```typescript
+// Ajánlott implementáció
+class ChessFacade {
+  private gameService: GameService;
+  private playerService: PlayerService;
+  private aiGameService: AIGameService;
+  
+  async startNewGame(userId: string, settings: GameSettings): Promise<string> {
+    const gameId = generateId();
+    await this.gameService.createNewGame(gameId, settings);
+    await this.playerService.joinGame(gameId, userId);
+    if (settings.opponentType === "ai") {
+      await this.aiGameService.startAIGame(gameId, settings.aiLevel);
+    }
+    return gameId;
+  }
+  
+  async makeMove(gameId: string, move: Move): Promise<void> {
+    // Orchestrate multiple services
+    await this.gameService.updateGameInDb(...);
+    if (gameData.opponentType === "ai") {
+      await this.aiGameService.makeAIMove(...);
+    }
+  }
+}
+```
+
+**Előnyök**:
+- ✅ Egyszerűsített API komponenseknek
+- ✅ Több service koordinálása
+- ✅ Komponensek kevesebb service-től függenek
+
+**Jelenlegi probléma**: Komponensek sok service-t importálnak
+
+---
+
+#### 15.2.4 Decorator Pattern
+**Cél**: Funkciók dinamikus kiterjesztése
+
+```typescript
+// Ajánlott implementáció
+class BaseGameService { }
+
+class LoggingGameServiceDecorator extends BaseGameService {
+  async updateGameInDb(...args) {
+    console.log("Updating game:", args);
+    const result = await super.updateGameInDb(...args);
+    console.log("Game updated:", result);
+    return result;
+  }
+}
+
+class CachingGameServiceDecorator extends BaseGameService {
+  private cache = new Map();
+  
+  async getGameById(gameId: string) {
+    if (this.cache.has(gameId)) {
+      return this.cache.get(gameId);
+    }
+    const game = await super.getGameById(gameId);
+    this.cache.set(gameId, game);
+    return game;
+  }
+}
+```
+
+**Előnyök**:
+- ✅ Logging hozzáadása production-ben
+- ✅ Caching réteg
+- ✅ Performance monitoring
+- ✅ Error tracking
+
+**Használati eset**: Development vs Production különbségek
+
+---
+
+#### 15.2.5 Command Pattern
+**Cél**: Akciók visszavonhatósága (Undo/Redo)
+
+```typescript
+// Ajánlott implementáció
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+class MoveCommand implements Command {
+  constructor(
+    private chessGame: Chess,
+    private move: Move
+  ) {}
+  
+  execute() {
+    this.chessGame.move(this.move);
+  }
+  
+  undo() {
+    this.chessGame.undo();
+  }
+}
+
+class CommandHistory {
+  private history: Command[] = [];
+  private currentIndex = -1;
+  
+  execute(command: Command) {
+    command.execute();
+    this.history = this.history.slice(0, this.currentIndex + 1);
+    this.history.push(command);
+    this.currentIndex++;
+  }
+  
+  undo() {
+    if (this.currentIndex >= 0) {
+      this.history[this.currentIndex].undo();
+      this.currentIndex--;
+    }
+  }
+  
+  redo() {
+    if (this.currentIndex < this.history.length - 1) {
+      this.currentIndex++;
+      this.history[this.currentIndex].execute();
+    }
+  }
+}
+```
+
+**Előnyök**:
+- ✅ Undo/Redo funkció
+- ✅ Move history tárolás
+- ✅ Time travel debugging
+
+**Használati eset**: Game analysis, training mode
+
+---
+
+#### 15.2.6 State Pattern
+**Cél**: Játék állapot kezelés
+
+```typescript
+// Ajánlott implementáció
+interface GameState {
+  handleMove(game: Game, move: Move): void;
+  canJoin(game: Game): boolean;
+  canAbort(game: Game): boolean;
+}
+
+class WaitingState implements GameState {
+  handleMove() {
+    throw new Error("Game not started");
+  }
+  canJoin(game: Game) {
+    return !game.players.white || !game.players.black;
+  }
+  canAbort() {
+    return true;
+  }
+}
+
+class OngoingState implements GameState {
+  handleMove(game: Game, move: Move) {
+    // Process move
+  }
+  canJoin() {
+    return false;
+  }
+  canAbort(game: Game) {
+    return game.moves.length <= 1;
+  }
+}
+
+class EndedState implements GameState {
+  handleMove() {
+    throw new Error("Game ended");
+  }
+  canJoin() {
+    return false;
+  }
+  canAbort() {
+    return false;
+  }
+}
+```
+
+**Előnyök**:
+- ✅ Állapot-specifikus logika
+- ✅ Invalid operations prevention
+- ✅ Tisztább kód
+
+**Használati eset**: Game status validation (waiting, ongoing, ended)
+
+---
+
+#### 15.2.7 Middleware Pattern
+**Cél**: Request/Response interceptors
+
+```typescript
+// Ajánlott implementáció
+type Middleware = (context: any, next: () => Promise<any>) => Promise<any>;
+
+class MiddlewareChain {
+  private middlewares: Middleware[] = [];
+  
+  use(middleware: Middleware) {
+    this.middlewares.push(middleware);
+  }
+  
+  async execute(context: any) {
+    let index = 0;
+    const next = async () => {
+      if (index < this.middlewares.length) {
+        await this.middlewares[index++](context, next);
+      }
+    };
+    await next();
+  }
+}
+
+// Példa middlewares
+const authMiddleware: Middleware = async (ctx, next) => {
+  if (!ctx.user) throw new Error("Unauthorized");
+  await next();
+};
+
+const loggingMiddleware: Middleware = async (ctx, next) => {
+  console.log("Request:", ctx);
+  await next();
+  console.log("Response:", ctx);
+};
+
+const validationMiddleware: Middleware = async (ctx, next) => {
+  if (!isValidMove(ctx.move)) throw new Error("Invalid move");
+  await next();
+};
+```
+
+**Előnyök**:
+- ✅ Extensible request pipeline
+- ✅ Cross-cutting concerns (auth, logging, validation)
+- ✅ Reusable middlewares
+
+**Használati eset**: Move validation pipeline, API call interceptors
+
+---
+
+#### 15.2.8 Dependency Injection
+**Cél**: Loose coupling, testability
+
+```typescript
+// Ajánlott implementáció
+interface IGameRepository {
+  save(game: Game): Promise<void>;
+  findById(gameId: string): Promise<Game | null>;
+}
+
+class FirebaseGameRepository implements IGameRepository {
+  async save(game: Game) {
+    await set(ref(db, `games/${game.id}`), game);
+  }
+  
+  async findById(gameId: string) {
+    const snapshot = await get(ref(db, `games/${gameId}`));
+    return snapshot.val();
+  }
+}
+
+class GameService {
+  constructor(private gameRepo: IGameRepository) {}
+  
+  async createGame(settings: GameSettings) {
+    const game = GameFactory.create(settings);
+    await this.gameRepo.save(game);
+    return game;
+  }
+}
+
+// Container (használat)
+const gameRepo = new FirebaseGameRepository();
+const gameService = new GameService(gameRepo);
+
+// Teszt (mock injection)
+const mockRepo = new MockGameRepository();
+const testService = new GameService(mockRepo);
+```
+
+**Előnyök**:
+- ✅ Testability (mock dependencies)
+- ✅ Loose coupling
+- ✅ Swappable implementations
+
+**Jelenlegi probléma**: Services közvetlenül használják Firebase-t, nem injektálható
+
+---
+
+#### 15.2.9 Event Emitter Pattern
+**Cél**: Loose coupling komponensek között
+
+```typescript
+// Ajánlott implementáció
+class GameEventEmitter extends EventEmitter {
+  onMoveComplete(callback: (gameId: string, move: Move) => void) {
+    this.on("moveComplete", callback);
+  }
+  
+  onGameEnd(callback: (gameId: string, winner: string) => void) {
+    this.on("gameEnd", callback);
+  }
+  
+  emitMoveComplete(gameId: string, move: Move) {
+    this.emit("moveComplete", gameId, move);
+  }
+  
+  emitGameEnd(gameId: string, winner: string) {
+    this.emit("gameEnd", gameId, winner);
+  }
+}
+
+// Használat
+const gameEvents = new GameEventEmitter();
+
+gameEvents.onMoveComplete((gameId, move) => {
+  console.log("Move completed:", move);
+  // Update UI, play sound, etc.
+});
+
+gameEvents.onGameEnd((gameId, winner) => {
+  // Show modal, update stats, etc.
+});
+```
+
+**Előnyök**:
+- ✅ Decoupled komponensek
+- ✅ Event-driven architecture
+- ✅ Easy to add listeners
+
+**Használati eset**: Game events (move, capture, check, checkmate), Chat messages
+
+---
+
+### 15.3 Anti-Patterns (Elkerülendők)
+
+#### 15.3.1 God Object
+**Probléma**: `ChessGame.tsx` túl sok felelősség
+- ✅ **Javítva**: Service layer bevezetéssel részben javult
+- ⚠️ **Még mindig**: 615 sor, sok state
+
+**Megoldás**: További szétbontás (useGameLogic hook, useTimer hook)
+
+---
+
+#### 15.3.2 Prop Drilling
+**Probléma**: Props átadás sok szinten keresztül
+
+```typescript
+<ChessGame>
+  <ChessGameView onMove={handleMove}>
+    <MoveHistory onViewMove={handleViewMove}>
+      <MoveItem onClick={...} />
+```
+
+**Megoldás**: Context API vagy State Management (Redux, Zustand)
+
+---
+
+#### 15.3.3 Magic Numbers
+**Probléma**: Hardcoded értékek
+
+```typescript
+// Bad
+if (timeLeft < 20000) { ... }
+
+// Good
+const TIME_WARNING_THRESHOLD_MS = 20000;
+if (timeLeft < TIME_WARNING_THRESHOLD_MS) { ... }
+```
+
+**Javítás**: Constants fájl létrehozása
+
+---
+
+### 15.4 Összefoglaló Táblázat
+
+| Minta | Használva? | Implementáció | Ajánlott? |
+|-------|-----------|---------------|-----------|
+| Singleton | ✅ Yes | Services | ✅ Keep |
+| Service Layer | ✅ Yes | gameService, playerService | ✅ Keep |
+| Presentational/Container | ✅ Yes | ChessGame/ChessGameView | ✅ Keep |
+| Observer | ✅ Yes | Firebase listeners | ✅ Keep |
+| Custom Hooks | ✅ Partial | useAuth | ✅ Expand |
+| Composition | ✅ Yes | Layout, Modals | ✅ Keep |
+| Strategy | ✅ Implicit | Game end logic | ✅ Make explicit |
+| Module | ✅ Yes | services/index.ts | ✅ Keep |
+| Repository | ❌ No | - | 🔥 High priority |
+| Factory | ❌ No | - | ⚡ Medium priority |
+| Facade | ❌ No | - | ⚡ Medium priority |
+| Decorator | ❌ No | - | ✨ Nice to have |
+| Command | ❌ No | - | ✨ Nice to have |
+| State | ❌ No | - | ⚡ Medium priority |
+| Middleware | ❌ No | - | ✨ Nice to have |
+| Dependency Injection | ❌ No | - | 🔥 High priority |
+| Event Emitter | ❌ No | - | ⚡ Medium priority |
+
+---
+
+## 16. Összefoglalás
+
+### 16.1 Projekt Méret
 - **Komponensek**: ~25
 - **Services**: 5
 - **Oldalak**: 7
 - **Lines of Code**: ~8000+ (becsült)
 
-### 15.2 Technológiai Érettség
+### 16.2 Technológiai Érettség
 - ✅ Modern React (19.x)
 - ✅ TypeScript strict mode
 - ✅ Firebase integráció
 - ✅ Service layer architecture
 - ✅ Real-time sync
+- ✅ Singleton pattern (Services)
+- ✅ Presentational/Container pattern
 - ⚠️ Hiányos tesztek
 - ⚠️ Biztonsági rések
+- ⚠️ Nincs Repository pattern
+- ⚠️ Nincs Dependency Injection
 
-### 15.3 Production Ready?
+### 16.3 Production Ready?
 **Részben**:
 - ✅ Core funkciók működnek
 - ✅ Deploy-olható
-- ❌ Security rules javítandók
-- ❌ Hiányzó error handling
-- ❌ Nincs tesztelés
-
-### 15.4 Következő Lépések (Prioritás szerint)
+### 16.4 Következő Lépések (Prioritás szerint)
 
 1. **🔥 Kritikus**:
    - Firebase Security Rules javítás
    - Error boundary implementálás
    - Loading states mindenütt
+   - Repository Pattern bevezetése
+   - Dependency Injection implementálás
 
 2. **⚡ Fontos**:
    - Chat backend implementálás
    - Unit tesztek (legalább service layer)
    - Dark mode implementálás
+   - Factory Pattern objektum létrehozáshoz
+   - State Pattern játék állapot kezeléshez
+   - Facade Pattern service orchestration-höz
 
 3. **✨ Nice to have**:
    - AI hint gomb
    - Game analysis
    - Friend system
    - PWA support
+   - Command Pattern (Undo/Redo)
+   - Event Emitter Pattern
+   - Decorator Pattern (logging, caching)
 
 ---
+
+**Dokumentum Verzió**: 2.0.0  
+**Utolsó Frissítés**: 2025-10-17  
+**Szerző**: GitHub Copilot (kód alapján generálva)
+
+**Changelog**:
+- **v2.0.0** (2025-10-17): Tervezési minták szakasz hozzáadva (15. fejezet)
+- **v1.0.0** (2025-10-17): Kezdeti verzió
 
 **Dokumentum Verzió**: 1.0.0  
 **Utolsó Frissítés**: 2025-10-17  
