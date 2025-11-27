@@ -55,48 +55,72 @@ A **ChessApp** egy valós idejű, multiplayer sakkjáték alkalmazás, amely mod
 
 ### Rétegzett Architektúra
 
-```
-┌─────────────────────────────────────┐
-│         UI Layer (React)            │
-│  Components, Pages, Layouts         │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      Service Layer (TS Classes)     │
-│  gameService, playerService,        │
-│  userService, lichessService        │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│    Firebase Layer (DB/Auth)         │
-│  Realtime DB, Firestore, Auth       │
-└─────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph UI["UI Layer (React)"]
+        A[Components]
+        B[Pages]
+        C[Layouts]
+    end
+    
+    subgraph Service["Service Layer (TypeScript)"]
+        D[gameService]
+        E[playerService]
+        F[userService]
+        G[lichessService]
+    end
+    
+    subgraph Firebase["Firebase Layer"]
+        H[Realtime Database]
+        I[Firestore]
+        J[Authentication]
+        K[Storage]
+    end
+    
+    UI --> Service
+    Service --> Firebase
+    
+    style UI fill:#14b8a6,stroke:#0f766e,stroke-width:2px,color:#fff
+    style Service fill:#0891b2,stroke:#0e7490,stroke-width:2px,color:#fff
+    style Firebase fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
 ```
 
 ### Komponens Hierarchia
 
-```
-App.tsx (Router)
-├── Layout
-│   ├── Header (Navigáció)
-│   └── Main Content
-│       ├── Home
-│       ├── Lobby
-│       ├── MyGames
-│       ├── Leaderboard
-│       ├── Settings
-│       └── ChessGame
-│           ├── ChessGameView
-│           │   ├── PlayerInfo (x2)
-│           │   ├── ChessClock (x2)
-│           │   ├── Chessboard
-│           │   ├── MoveHistory
-│           │   └── ChatBox
-│           ├── GameEndModal
-│           ├── ConfirmSurrenderModal
-│           └── DrawOfferModal
-├── LoginForm
-└── RegisterForm
+```mermaid
+graph TB
+    App[App.tsx - Router]
+    
+    App --> Layout
+    App --> Login[LoginForm]
+    App --> Register[RegisterForm]
+    
+    Layout --> Header[Header - Navigation]
+    Layout --> MainContent[Main Content]
+    
+    MainContent --> Home
+    MainContent --> Lobby
+    MainContent --> MyGames
+    MainContent --> Leaderboard
+    MainContent --> Settings
+    MainContent --> ChessGame
+    
+    ChessGame --> ChessGameView
+    ChessGame --> GameEndModal
+    ChessGame --> ConfirmSurrenderModal
+    ChessGame --> DrawOfferModal
+    
+    ChessGameView --> PlayerInfo1[PlayerInfo Top]
+    ChessGameView --> PlayerInfo2[PlayerInfo Bottom]
+    ChessGameView --> ChessClock1[ChessClock Top]
+    ChessGameView --> ChessClock2[ChessClock Bottom]
+    ChessGameView --> Chessboard
+    ChessGameView --> MoveHistory
+    ChessGameView --> ChatBox
+    
+    style App fill:#14b8a6,stroke:#0f766e,stroke-width:3px,color:#fff
+    style ChessGame fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style ChessGameView fill:#0891b2,stroke:#0e7490,stroke-width:2px,color:#fff
 ```
 
 ---
@@ -229,15 +253,16 @@ Firebase Listeners:
 
 #### **5. ChessGameView.tsx**
 **Felelősség:** Játék MEGJELENÍTÉS (tiszta UI komponens)
-```typescript
-Props:
+
+**Props (20+):**
 - chessPosition, optionSquares, lastMoveSquares
 - players, currentUser, currentTurn
 - moveHistory, viewingHistoryIndex
 - timeLeft, gameStatus
 - callbacks: onSquareClick, onPieceDrop, stb.
 
-Layout:
+**Layout:**
+```
 ┌─────────────────────────────────────┐
 │  Felső játékos + Óra                │
 ├─────────────────────────────────────┤
@@ -249,13 +274,59 @@ Layout:
 └─────────────────────────────────────┘
 │  Lépéstörténet | Chat | Gombok    │
 └─────────────────────────────────────┘
+```
 
-Features:
+**Features:**
 - Animated background
 - Floating chess pieces
 - Responsive layout
 - Board orientation (white/black)
 - Status overlays (WAITING, etc.)
+
+**ChessGame ↔ ChessGameView adatfolyam:**
+
+```mermaid
+graph LR
+    subgraph ChessGame["ChessGame.tsx (Container)"]
+        Logic[Játék Logika]
+        State[State Management]
+        Firebase[Firebase Sync]
+        Events[Event Handlers]
+    end
+    
+    subgraph ChessGameView["ChessGameView.tsx (Presentation)"]
+        UI[UI Renderelés]
+        Board[Chessboard]
+        Players[PlayerInfo]
+        Clock[ChessClock]
+        History[MoveHistory]
+        Chat[ChatBox]
+    end
+    
+    State -->|chessPosition| Board
+    State -->|optionSquares| Board
+    State -->|lastMoveSquares| Board
+    State -->|players| Players
+    State -->|timeLeft| Clock
+    State -->|moveHistory| History
+    State -->|messages| Chat
+    
+    Board -->|onSquareClick| Events
+    Board -->|onPieceDrop| Events
+    UI -->|onSurrender| Events
+    UI -->|onOfferDraw| Events
+    UI -->|onAbort| Events
+    Chat -->|onSendMessage| Events
+    
+    Events --> Logic
+    Logic --> Firebase
+    Firebase -->|realtime updates| State
+    
+    style ChessGame fill:#3b82f6,stroke:#2563eb,color:#fff
+    style ChessGameView fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Logic fill:#10b981,stroke:#059669,color:#fff
+    style State fill:#f59e0b,stroke:#d97706,color:#fff
+    style Firebase fill:#ef4444,stroke:#dc2626,color:#fff
 ```
 
 #### **6. PlayerInfo.tsx**
@@ -364,6 +435,57 @@ Settings:
 
 A service réteg singleton osztályok formájában implementált, ami elkülöníti az üzleti logikát a UI-tól.
 
+### Service Layer Architektúra
+
+```mermaid
+graph TD
+    subgraph UI["🎨 UI Layer"]
+        ChessGame[ChessGame.tsx]
+        Lobby[Lobby.tsx]
+        Leaderboard[Leaderboard.tsx]
+        Settings[Settings.tsx]
+    end
+    
+    subgraph Services["🔧 Service Layer (Singleton)"]
+        GameService[gameService.ts]
+        PlayerService[playerService.ts]
+        UserService[userService.ts]
+        LichessService[lichessService.ts]
+    end
+    
+    subgraph Firebase["🔥 Firebase Backend"]
+        RealtimeDB[(Realtime DB<br/>games/)]
+        Firestore[(Firestore<br/>users/)]
+        Storage[(Storage<br/>avatars/)]
+        Auth[Authentication]
+    end
+    
+    ChessGame -->|createNewGame| GameService
+    ChessGame -->|updateGameInDb| GameService
+    ChessGame -->|joinGame| PlayerService
+    
+    Lobby -->|listGames| GameService
+    Leaderboard -->|getUserProfile| UserService
+    Settings -->|updateUserProfile| UserService
+    Settings -->|uploadAvatar| UserService
+    
+    GameService -->|update/onValue| RealtimeDB
+    PlayerService -->|getDoc| Firestore
+    UserService -->|setDoc/updateDoc| Firestore
+    UserService -->|uploadBytes| Storage
+    
+    GameService -.->|calculateEloChange| GameService
+    GameService -.->|bothPlayersJoined| PlayerService
+    PlayerService -.->|getPlayerData| Firestore
+    
+    style UI fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Services fill:#3b82f6,stroke:#2563eb,color:#fff
+    style Firebase fill:#ef4444,stroke:#dc2626,color:#fff
+    style GameService fill:#10b981,stroke:#059669,color:#fff
+    style PlayerService fill:#10b981,stroke:#059669,color:#fff
+    style UserService fill:#10b981,stroke:#059669,color:#fff
+```
+
 ### **1. gameService.ts** 🎮
 **Felelősség:** Játék életciklus és szabályok kezelése
 
@@ -422,6 +544,59 @@ handleTimeout(gameId, gameData, timeoutSide)
 Expected Score = 1 / (1 + 10^((opponent_elo - player_elo) / 400))
 New ELO = Old ELO + K * (actual_score - expected_score)
 ahol K = 32
+```
+
+**ELO Számítás Folyamat:**
+
+```mermaid
+flowchart TD
+    Start([Játék véget ér]) --> GetELO[Kezdő ELO-k<br/>lekérése]
+    
+    GetELO --> CheckWinner{Eredmény?}
+    
+    CheckWinner -->|Győzelem| CalcWin[Winner ELO<br/>Loser ELO]
+    CheckWinner -->|Döntetlen| CalcDraw[Player1 ELO<br/>Player2 ELO]
+    
+    CalcWin --> ExpectedWin[Expected Score számítás<br/>Winner vs Loser]
+    CalcDraw --> ExpectedDraw[Expected Score számítás<br/>mindkét játékos]
+    
+    ExpectedWin --> WinFormula["Winner Expected:<br/>1 / (1 + 10^((LoserELO - WinnerELO)/400))"]
+    ExpectedWin --> LoseFormula["Loser Expected:<br/>1 / (1 + 10^((WinnerELO - LoserELO)/400))"]
+    
+    ExpectedDraw --> DrawFormula1["P1 Expected:<br/>1 / (1 + 10^((P2ELO - P1ELO)/400))"]
+    ExpectedDraw --> DrawFormula2["P2 Expected:<br/>1 / (1 + 10^((P1ELO - P2ELO)/400))"]
+    
+    WinFormula --> WinDelta["Winner Δ = K * (1 - Expected)<br/>K=32"]
+    LoseFormula --> LoseDelta["Loser Δ = K * (0 - Expected)<br/>K=32"]
+    
+    DrawFormula1 --> DrawDelta1["P1 Δ = K * (0.5 - Expected)<br/>K=32"]
+    DrawFormula2 --> DrawDelta2["P2 Δ = K * (0.5 - Expected)<br/>K=32"]
+    
+    WinDelta --> UpdateWinner[Winner New ELO<br/>= Old + Δ]
+    LoseDelta --> UpdateLoser[Loser New ELO<br/>= Old + Δ]
+    
+    DrawDelta1 --> UpdateDraw1[P1 New ELO<br/>= Old + Δ]
+    DrawDelta2 --> UpdateDraw2[P2 New ELO<br/>= Old + Δ]
+    
+    UpdateWinner --> SaveWinner[Firestore:<br/>Winner ELO mentése]
+    UpdateLoser --> SaveLoser[Firestore:<br/>Loser ELO mentése]
+    
+    UpdateDraw1 --> SaveDraw1[Firestore:<br/>P1 ELO mentése]
+    UpdateDraw2 --> SaveDraw2[Firestore:<br/>P2 ELO mentése]
+    
+    SaveWinner --> End([ELO frissítve])
+    SaveLoser --> End
+    SaveDraw1 --> End
+    SaveDraw2 --> End
+    
+    style Start fill:#14b8a6,stroke:#0f766e,color:#fff
+    style End fill:#10b981,stroke:#059669,color:#fff
+    style ExpectedWin fill:#f59e0b,stroke:#d97706,color:#fff
+    style ExpectedDraw fill:#f59e0b,stroke:#d97706,color:#fff
+    style WinDelta fill:#3b82f6,stroke:#2563eb,color:#fff
+    style LoseDelta fill:#3b82f6,stroke:#2563eb,color:#fff
+    style DrawDelta1 fill:#3b82f6,stroke:#2563eb,color:#fff
+    style DrawDelta2 fill:#3b82f6,stroke:#2563eb,color:#fff
 ```
 
 ### **2. playerService.ts** 👥
@@ -625,19 +800,101 @@ games/
 ```
 
 #### **Firestore**
+
+```mermaid
+graph TD
+    Firestore[Firestore Database] --> Users[users/]
+    
+    Users --> UserDoc["{userId}/"]
+    
+    UserDoc --> Identity[Azonosítás]
+    UserDoc --> Stats[Statisztikák]
+    UserDoc --> Timestamps[Időbélyegek]
+    
+    Identity --> UID["uid: 'user123'"]
+    Identity --> Email["email: 'player@example.com'"]
+    Identity --> DisplayName["displayName: 'Player Name'"]
+    Identity --> PhotoURL["photoURL: 'https://...' | 'emoji:👤'"]
+    
+    Stats --> ELO["elo: 1200"]
+    Stats --> Wins["wins: 10"]
+    Stats --> Losses["losses: 5"]
+    Stats --> Draws["draws: 2"]
+    
+    Timestamps --> CreatedAt["createdAt: timestamp"]
+    Timestamps --> UpdatedAt["updatedAt: timestamp"]
+    
+    style Firestore fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Users fill:#ec4899,stroke:#db2777,color:#fff
+    style UserDoc fill:#14b8a6,stroke:#0f766e,color:#fff
 ```
-users/
-  {userId}/
-    uid: "user123"
-    email: "player@example.com"
-    displayName: "Player Name"
-    photoURL: "https://..." | "emoji:👤"
-    elo: 1200
-    wins: 10
-    losses: 5
-    draws: 2
-    createdAt: 1234567890
-    updatedAt: 1234567890
+
+#### **Storage (Cloud Storage)**
+
+```mermaid
+graph LR
+    Storage[Firebase Storage] --> Avatars[userAvatars/]
+    
+    Avatars --> Avatar1["{userId}.jpg"]
+    Avatars --> Avatar2["{userId}.png"]
+    Avatars --> Avatar3["..."]
+    
+    Avatar1 --> URL1[Public Download URL]
+    Avatar2 --> URL2[Public Download URL]
+    
+    URL1 --> Display1[Megjelenik Header-ben]
+    URL2 --> Display2[Megjelenik Profil-ban]
+    
+    style Storage fill:#f59e0b,stroke:#d97706,color:#fff
+    style Avatars fill:#14b8a6,stroke:#0f766e,color:#fff
+    style URL1 fill:#10b981,stroke:#059669,color:#fff
+    style URL2 fill:#10b981,stroke:#059669,color:#fff
+```
+
+### Firebase műveletek összefoglalása
+
+```mermaid
+graph TD
+    subgraph RTD["🔥 Realtime Database"]
+        RTD_Read["📖 get / onValue<br/>(játék betöltése)"]
+        RTD_Write["✏️ update / set<br/>(játék frissítése)"]
+        RTD_Chat["💬 push / onValue<br/>(chat üzenetek)"]
+    end
+    
+    subgraph FS["🗃️ Firestore"]
+        FS_Read["📖 getDoc<br/>(profil lekérés)"]
+        FS_Write["✏️ setDoc / updateDoc<br/>(profil frissítés)"]
+        FS_Query["🔍 query / orderBy<br/>(ranglisták)"]
+    end
+    
+    subgraph ST["📦 Storage"]
+        ST_Upload["⬆️ uploadBytes<br/>(avatar feltöltés)"]
+        ST_Download["⬇️ getDownloadURL<br/>(avatar URL)"]
+    end
+    
+    subgraph AUTH["🔐 Authentication"]
+        Auth_Login["🔑 signInWith...<br/>(bejelentkezés)"]
+        Auth_Register["📝 createUser...<br/>(regisztráció)"]
+        Auth_State["👤 onAuthStateChanged<br/>(auth állapot)"]
+    end
+    
+    Services[Service Layer] --> RTD_Read
+    Services --> RTD_Write
+    Services --> RTD_Chat
+    Services --> FS_Read
+    Services --> FS_Write
+    Services --> FS_Query
+    Services --> ST_Upload
+    Services --> ST_Download
+    Services --> Auth_Login
+    Services --> Auth_Register
+    Services --> Auth_State
+    
+    style RTD fill:#ef4444,stroke:#dc2626,color:#fff
+    style FS fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style ST fill:#f59e0b,stroke:#d97706,color:#fff
+    style AUTH fill:#14b8a6,stroke:#0f766e,color:#fff
+    style Services fill:#3b82f6,stroke:#2563eb,color:#fff
 ```
 
 ---
@@ -646,49 +903,91 @@ users/
 
 ### Játék Életciklus
 
-```
-1. WAITING
-   ├─ Játék létrehozva
-   ├─ Várakozás játékosokra
-   └─ status: "waiting"
-
-2. ONGOING (started: true)
-   ├─ Mindkét játékos csatlakozott
-   ├─ Első lépés megtörtént
-   ├─ Óra jár
-   └─ status: "ongoing"
-
-3. ENDED
-   ├─ Játék véget ért
-   ├─ ELO frissítve
-   ├─ Statisztika frissítve
-   └─ status: "ended"
+```mermaid
+stateDiagram-v2
+    [*] --> WAITING: createNewGame()
+    
+    WAITING --> ONGOING: 2 játékos csatlakozott\nElső lépés megtörtént
+    
+    ONGOING --> ENDED: Checkmate
+    ONGOING --> ENDED: Timeout
+    ONGOING --> ENDED: Resignation
+    ONGOING --> ENDED: Draw (stalemate/agreement)
+    
+    ENDED --> [*]
+    
+    note right of WAITING
+        status: "waiting"
+        - Játék létrehozva
+        - Várakozás játékosokra
+    end note
+    
+    note right of ONGOING
+        status: "ongoing"
+        started: true
+        - Mindkét játékos bent
+        - Óra jár
+    end note
+    
+    note right of ENDED
+        status: "ended"
+        - ELO frissítve
+        - Statisztika mentve
+        - finalElo mentve
+    end note
 ```
 
 ### Lépés Validáció Flow
 
-```typescript
-onSquareClick() / onPieceDrop()
-    ↓
-canMove() ellenőrzés
-    ├─ Van-e bejelentkezett user?
-    ├─ Játékos vagy-e? (nem néző)
-    ├─ Mindkét játékos csatlakozott?
-    ├─ Nem lejárt-e az időd?
-    ├─ Játék status !== "ended"?
-    └─ Te vagy soron? (turn check)
-    ↓
-isMyPiece() ellenőrzés
-    └─ Az a bábu a tiéd-e?
-    ↓
-chess.js move() validáció
-    └─ Szabályos-e a lépés?
-    ↓
-updateGameInDb()
-    ├─ Lépés mentése
-    ├─ Idő frissítés
-    ├─ Játék vége ellenőrzés
-    └─ ELO számítás (ha véget ért)
+```mermaid
+flowchart TD
+    Start([User: Kattintás/Drag]) --> CanMove{canMove<br/>ellenőrzés}
+    
+    CanMove -->|Van user?| UserCheck{Bejelentkezett?}
+    CanMove -->|Nincs user| Reject[❌ Elutasítva]
+    
+    UserCheck -->|Igen| PlayerCheck{Játékos vagy-e?}
+    UserCheck -->|Nem| Reject
+    
+    PlayerCheck -->|Igen| BothJoined{Mindkét játékos<br/>csatlakozott?}
+    PlayerCheck -->|Néző| Reject
+    
+    BothJoined -->|Igen| TimeCheck{Időd van még?}
+    BothJoined -->|Nem| Reject
+    
+    TimeCheck -->|Igen| StatusCheck{status !== ended?}
+    TimeCheck -->|Lejárt| Reject
+    
+    StatusCheck -->|OK| TurnCheck{Te vagy soron?}
+    StatusCheck -->|Ended| Reject
+    
+    TurnCheck -->|Igen| IsMyPiece{Saját bábu?}
+    TurnCheck -->|Nem| Reject
+    
+    IsMyPiece -->|Igen| ChessValidation{chess.js<br/>move validáció}
+    IsMyPiece -->|Nem| Reject
+    
+    ChessValidation -->|Szabályos| UpdateDB[updateGameInDb]
+    ChessValidation -->|Illegális| Reject
+    
+    UpdateDB --> SaveMove[Lépés mentése]
+    SaveMove --> UpdateTime[Idő frissítés]
+    UpdateTime --> CheckEnd{Játék véget ért?}
+    
+    CheckEnd -->|Igen| UpdateELO[ELO számítás]
+    CheckEnd -->|Nem| FirebaseSync[Firebase sync]
+    
+    UpdateELO --> FirebaseSync
+    FirebaseSync --> Success[✅ Sikeres lépés]
+    
+    Success --> End([Vége])
+    Reject --> End
+    
+    style Start fill:#14b8a6,stroke:#0f766e,color:#fff
+    style Success fill:#10b981,stroke:#059669,color:#fff
+    style Reject fill:#ef4444,stroke:#dc2626,color:#fff
+    style UpdateDB fill:#f59e0b,stroke:#d97706,color:#fff
+    style ChessValidation fill:#8b5cf6,stroke:#7c3aed,color:#fff
 ```
 
 ### Időkezelés
@@ -756,90 +1055,158 @@ New_ELO_B = 1400 + 32 * (0.5 - 0.76) = 1392 (-8)
 
 ### Játék Indítás Flow
 
-```
-User kattint "Start Playing" →
-CreateGameModal megnyílik →
-User beállítja:
-  - Time control (5 perc)
-  - Increment (0 sec)
-  - Opponent type (human)
-→
-handleCreateGame(settings) →
-Új gameId generálás (Date.now()) →
-Navigate to /game/{gameId} →
-ChessGame mount →
-useEffect → get(gameRef) →
-  Ha nincs játék:
-    createNewGame(gameId, settings) →
-    Firebase: új játék létrehozása
-  Ha van játék:
-    Játék betöltése
-→
-onValue(gameRef) →
-Realtime listener feliratkozás →
-Játék state folyamatos szinkronizálás
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as UI Layer
+    participant Modal as CreateGameModal
+    participant Router as React Router
+    participant ChessGame
+    participant Firebase as Firebase DB
+    
+    User->>UI: Kattint "Start Playing"
+    UI->>Modal: Megnyílik
+    User->>Modal: Beállítja opciókat<br/>(time, increment, opponent)
+    Modal->>Router: handleCreateGame(settings)
+    Router->>Router: Generál gameId (Date.now())
+    Router->>ChessGame: Navigate /game/{gameId}
+    
+    activate ChessGame
+    ChessGame->>Firebase: get(gameRef)
+    
+    alt Nincs játék
+        ChessGame->>Firebase: createNewGame(gameId, settings)
+        Firebase-->>ChessGame: Új játék létrehozva
+    else Van játék
+        Firebase-->>ChessGame: Játék adatok
+    end
+    
+    ChessGame->>Firebase: onValue(gameRef) - Listener
+    Firebase-->>ChessGame: Realtime updates
+    
+    loop Folyamatos szinkronizálás
+        Firebase-->>ChessGame: State változások
+        ChessGame->>UI: UI frissítés
+    end
+    deactivate ChessGame
+    
+    Note over ChessGame,Firebase: Realtime kapcsolat<br/>a játék végéig
 ```
 
-### Lépés Flow
+### Lépés Flow (Játékosok közötti interakció)
 
-```
-User kattint egy bábura (moveFrom) →
-getMoveOptions() →
-chess.js moves() →
-Lehetséges lépések kiszámítása →
-optionSquares state frissítés →
-Vizuális feedback (körök) →
-
-User kattint célmezőre →
-onSquareClick() →
-canMove() validáció →
-chess.js move() →
-Ha sikeres:
-  - chessPosition frissítés (local)
-  - lastMoveSquares frissítés
-  - updateGameInDb() →
-    Firebase update →
-    Realtime DB frissül →
-    onValue listener triggerel →
-    Ellenfél screen-jén is frissül
+```mermaid
+sequenceDiagram
+    actor PlayerA as Játékos A
+    participant UIa as UI (A)
+    participant Chess as chess.js
+    participant Firebase as Firebase DB
+    participant UIb as UI (B)
+    actor PlayerB as Játékos B
+    
+    PlayerA->>UIa: Kattint bábura
+    UIa->>Chess: getMoveOptions(square)
+    Chess-->>UIa: Lehetséges lépések
+    UIa->>UIa: optionSquares frissítés
+    Note over UIa: Vizuális feedback (körök)
+    
+    PlayerA->>UIa: Kattint célmezőre
+    UIa->>UIa: canMove() validáció
+    UIa->>Chess: move(from, to)
+    
+    alt Sikeres lépés
+        Chess-->>UIa: Move object
+        UIa->>UIa: Local state frissítés
+        UIa->>Firebase: updateGameInDb()
+        
+        Firebase->>Firebase: Lépés mentése
+        Firebase->>Firebase: Idő frissítés
+        Firebase->>Firebase: Játék vége ellenőrzés
+        
+        Firebase-->>UIa: onValue trigger (A)
+        Firebase-->>UIb: onValue trigger (B)
+        
+        UIb->>UIb: State frissítés
+        UIb->>PlayerB: Új pozíció látható
+        
+    else Illegális lépés
+        Chess-->>UIa: null / error
+        Note over UIa: Lépés elutasítva
+    end
 ```
 
 ### Chat Flow
 
-```
-User ír üzenetet →
-handleSendMessage() →
-Firebase: push(messagesRef, message) →
-Realtime DB frissül →
-onValue listener mindkét kliensen →
-messages state frissül →
-UI újra-renderel →
-Auto-scroll az új üzenethez
+```mermaid
+sequenceDiagram
+    actor UserA as Játékos A
+    participant ChatA as ChatBox (A)
+    participant Firebase as Firebase DB
+    participant ChatB as ChatBox (B)
+    actor UserB as Játékos B
+    
+    UserA->>ChatA: Ír üzenetet
+    ChatA->>ChatA: handleSendMessage()
+    ChatA->>Firebase: push(messagesRef, message)
+    
+    Firebase->>Firebase: Üzenet tárolása
+    Firebase-->>ChatA: onValue trigger
+    Firebase-->>ChatB: onValue trigger
+    
+    ChatA->>ChatA: messages state frissítés
+    ChatA->>ChatA: UI újra-renderel
+    ChatA->>ChatA: Auto-scroll
+    
+    ChatB->>ChatB: messages state frissítés
+    ChatB->>ChatB: UI újra-renderel
+    ChatB->>ChatB: Auto-scroll
+    
+    ChatB->>UserB: Új üzenet megjelenik
+    
+    Note over ChatA,ChatB: Realtime szinkronizálás<br/>mindkét kliens számára
 ```
 
 ### Auth Flow
 
-```
-1. Login:
-   signInWithEmailAndPassword() →
-   Firebase Auth →
-   onAuthStateChanged() trigger →
-   useAuth hook frissül →
-   user state !== null →
-   UI frissül (header, stb.)
-
-2. Register:
-   createUserWithEmailAndPassword() →
-   Firebase Auth user létrehozás →
-   createUserProfile() →
-   Firestore: új user document →
-   Redirect to home
-
-3. Guest:
-   signInAnonymously() →
-   Firebase Auth guest user →
-   Nincs Firestore profil →
-   Korlátozott funkciók
+```mermaid
+flowchart TD
+    Start([User]) --> AuthType{Auth típus?}
+    
+    AuthType -->|Email/Password| EmailLogin[signInWithEmailAndPassword]
+    AuthType -->|Google| GoogleLogin[signInWithPopup - Google]
+    AuthType -->|Guest| GuestLogin[signInAnonymously]
+    AuthType -->|Register| Register[createUserWithEmailAndPassword]
+    
+    EmailLogin --> FirebaseAuth[Firebase Auth]
+    GoogleLogin --> FirebaseAuth
+    GuestLogin --> FirebaseAuth
+    
+    Register --> FirebaseAuth
+    Register --> CreateProfile[createUserProfile]
+    CreateProfile --> Firestore[(Firestore)]
+    
+    FirebaseAuth --> AuthChanged[onAuthStateChanged trigger]
+    
+    AuthChanged --> UseAuthHook[useAuth hook]
+    UseAuthHook --> UserState{user !== null?}
+    
+    UserState -->|Igen| LoadProfile[getUserProfile]
+    UserState -->|Nem| UIUpdate[UI frissítés - logged out]
+    
+    LoadProfile --> Firestore
+    Firestore --> ProfileLoaded[userProfile betöltve]
+    
+    ProfileLoaded --> UIUpdate2[UI frissítés - logged in]
+    UIUpdate2 --> HeaderUpdate[Header frissül]
+    HeaderUpdate --> AvatarLoad[Avatar betöltés]
+    AvatarLoad --> Complete([Auth folyamat vége])
+    
+    UIUpdate --> Complete
+    
+    style Start fill:#14b8a6,stroke:#0f766e,color:#fff
+    style FirebaseAuth fill:#f59e0b,stroke:#d97706,color:#fff
+    style Firestore fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Complete fill:#10b981,stroke:#059669,color:#fff
 ```
 
 ---
@@ -1117,6 +1484,82 @@ chore: egyéb (build, config, stb.)
 
 ---
 
+## 🚀 Gyors Indítás (Getting Started)
+
+### Teljes Folyamat
+
+```mermaid
+flowchart TD
+    Start([👨‍💻 Fejlesztő]) --> Clone[📥 git clone repository]
+    Clone --> Install[📦 npm install]
+    
+    Install --> EnvSetup[⚙️ .env fájl létrehozása]
+    EnvSetup --> FirebaseConfig[🔥 Firebase projekt beállítás]
+    
+    FirebaseConfig --> DevServer[🚀 npm run dev]
+    
+    DevServer --> Browser[🌐 http://localhost:5173]
+    Browser --> Register[📝 Regisztráció / Login]
+    
+    Register --> Explore{Mit csinálj?}
+    
+    Explore -->|1| CreateGame[🎮 Játék létrehozása]
+    Explore -->|2| JoinGame[👥 Játékhoz csatlakozás]
+    Explore -->|3| ViewLeaderboard[🏆 Ranglista megtekintés]
+    Explore -->|4| Settings[⚙️ Beállítások]
+    
+    CreateGame --> Play[♟️ Játék indítása]
+    JoinGame --> Play
+    
+    Play --> Enjoy[✨ Élvezd a játékot!]
+    
+    style Start fill:#14b8a6,stroke:#0f766e,color:#fff
+    style DevServer fill:#3b82f6,stroke:#2563eb,color:#fff
+    style Play fill:#f59e0b,stroke:#d97706,color:#fff
+    style Enjoy fill:#10b981,stroke:#059669,color:#fff
+```
+
+### Első Játék Flow
+
+```mermaid
+sequenceDiagram
+    actor Dev as Fejlesztő
+    participant App as ChessApp
+    participant Firebase as Firebase
+    participant Game as Játék oldal
+    
+    Dev->>App: npm run dev
+    App->>Dev: http://localhost:5173
+    
+    Dev->>App: Regisztráció/Login
+    App->>Firebase: createUser / signIn
+    Firebase-->>App: User authenticated
+    
+    Dev->>App: Kattint "Start Playing"
+    App->>Game: CreateGameModal
+    Dev->>Game: Beállítások (5 perc, human)
+    
+    Game->>Firebase: createNewGame()
+    Firebase-->>Game: gameId létrehozva
+    
+    Game->>Dev: Játék oldal (/game/{id})
+    
+    Note over Dev,Firebase: Másik játékos csatlakozása...
+    
+    Firebase-->>Game: Player joined (realtime)
+    Game->>Dev: Játék kezdődött! ♟️
+    
+    Dev->>Game: Bábu mozgatás
+    Game->>Firebase: updateGameInDb()
+    Firebase-->>Game: Realtime sync
+    
+    Game->>Dev: Ellenfél lépése látható
+    
+    Note over Dev,Firebase: ... játék folytatódik ...
+```
+
+---
+
 ## 📞 Kapcsolat & Support
 
 - **GitHub Issues:** [github.com/sandortorok/ChessApp/issues]
@@ -1125,8 +1568,8 @@ chore: egyéb (build, config, stb.)
 
 ---
 
-**Utolsó frissítés:** 2025.01.27
-**Verzió:** 1.0.0
+**Utolsó frissítés:** 2025.01.27  
+**Verzió:** 1.0.0  
 **Készítette:** Copilot AI + sandortorok
 
 ---
