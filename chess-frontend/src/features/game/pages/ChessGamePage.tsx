@@ -10,6 +10,7 @@ import ConfirmSurrenderModal from "../../../components/ConfirmSurrenderModal";
 import DrawOfferModal from "../../../components/DrawOfferModal";
 import type { GameSettings } from "../../../components/CreateGameModal";
 import { useChessGame } from "../hooks/useChessGame";
+import { getPlayerDisplayName } from "../../../shared/utils";
 
 export default function ChessGamePage() {
     const { gameId } = useParams<{ gameId: string }>();
@@ -102,9 +103,9 @@ export default function ChessGamePage() {
                 <DrawOfferModal
                     opponentName={
                         gameData?.players?.white?.uid === drawOfferedBy
-                            ? (gameData.players.white.displayName || gameData.players.white.email?.split('@')[0] || "Ellenfél")
+                            ? getPlayerDisplayName(gameData.players.white)
                             : gameData?.players?.black?.uid === drawOfferedBy
-                            ? (gameData.players.black.displayName || gameData.players.black.email?.split('@')[0] || "Ellenfél")
+                            ? getPlayerDisplayName(gameData.players.black)
                             : "Ellenfél"
                     }
                     onAccept={handleAcceptDraw}
