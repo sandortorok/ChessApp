@@ -13,6 +13,7 @@ import DrawOfferModal from "./components/DrawOfferModal";
 import type { GameSettings } from "./components/CreateGameModal";
 import { gameService } from "./services/gameService";
 import { playerService } from "./services/playerService";
+import { useGameInitializer } from "./hooks/useGameInitializer";
 
 export default function ChessGame() {
     const { gameId } = useParams<{ gameId: string }>();
@@ -49,47 +50,33 @@ export default function ChessGame() {
         const unsub = onAuthStateChanged(auth, (u) => setCurrentUser(u));
         return () => unsub();
     }, []);
+
+    //Create game if not exists
+    useGameInitializer(gameId, gameSettings);
+
     // Game listener
     useEffect(() => {
         if (!gameId || !currentUser) return;
 
         const gameRef = ref(db, `games/${gameId}`);
 
-        get(gameRef)
-            .then((snap) => {
-                if (!snap.exists()) {
-                    console.log("No game found, creating new one.");
-                    createNewGame(gameId, gameSettings);
-                }
-            })
-            .catch((err) => console.error("Error checking game:", err));
-
         const unsubscribe = onValue(gameRef, async (snap) => {
-            const game = snap.val();
+            const game: Game = snap.val();
             if (!game) return;
-            
-            // FONTOS: Először frissítsük a FEN-t, hogy a chessGame.turn() helyes legyen
-            if (game.fen && viewingHistoryIndex === null) {
-                chessGame.load(game.fen);
-            }
-            
-            // Csak akkor számoljuk az időt, ha a játék folyamatban van (started === true ÉS status !== "ended")
-            if (game.timeLeft && game.updatedAt && game.started && game.status !== "ended") {
+            //Ha éppen néztük a historyt akkor is frissüljön a játék
+            setViewingHistoryIndex(null);
+            chessGame.load(game.fen);
+
+            // Csak akkor számoljuk az időt, ha a játék folyamatban van
+            if (game.timeLeft && game.status === "ongoing") {
                 const now = Date.now();
                 const elapsed = now - game.updatedAt; // mennyi idő telt el az utolsó lépés óta
 
-                // az éppen soron következő játékos (most már helyes a turn, mert betöltöttük a FEN-t)
                 const currentTurn = chessGame.turn() === "w" ? "white" : "black";
-                console.log(currentTurn)
-                // frissített idő csak a soron következő játékosnak
-                const newTimeLeft = {
-                    white: game.timeLeft.white,
-                    black: game.timeLeft.black,
+                setTimeLeft({
+                    ...game.timeLeft,
                     [currentTurn]: Math.max(0, game.timeLeft[currentTurn] - elapsed),
-                };
-                console.log(currentTurn);
-                setTimeLeft(newTimeLeft);
-                console.log("Updated time left:", newTimeLeft);
+                });
             } else if (game.timeLeft) {
                 // Ha a játék még nem indult el VAGY véget ért, csak betöltjük az utolsó mentett időt
                 setTimeLeft(game.timeLeft);
@@ -193,11 +180,6 @@ export default function ChessGame() {
         
         const mySideColor = mySide === "white" ? "w" : "b";
         return piece.color === mySideColor;
-    }
-
-    function createNewGame(gameId: string, settings?: GameSettings) {
-        // Service-t használjuk az új játék létrehozásához
-        gameService.createNewGame(gameId, settings);
     }
 
     async function updateGameInDb(fen: string, move: Move) {

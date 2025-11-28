@@ -158,7 +158,7 @@ export class PlayerService {
     if (!gameData || !gameData.timeLeft || !gameData.updatedAt) return 0;
 
     // If game hasn't started, return initial time
-    if (!gameData.started) return gameData.timeLeft[side];
+    if (gameData.status === "waiting") return gameData.timeLeft[side];
 
     const now = Date.now();
     const elapsed = now - gameData.updatedAt;

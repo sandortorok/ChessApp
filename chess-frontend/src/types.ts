@@ -56,7 +56,6 @@ export type Game = {
     opponentType?: "human" | "ai"; // Ellenfél típusa
     createdAt: number;
     updatedAt: number;
-    started: boolean;
     startingElo?: { white: number; black: number };
     finalElo?: { white: number; black: number };
     drawOfferedBy?: string | null; // Ki ajánlotta fel a döntetlent (uid)

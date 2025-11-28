@@ -27,7 +27,6 @@ export class GameService {
       players: { white: null, black: null },
       turn: "white",
       status: "waiting",
-      started: false,
       timeLeft: { white: initialTime, black: initialTime },
       timeControl: timeControl,
       increment: increment,
@@ -58,8 +57,8 @@ export class GameService {
     const gameRef = ref(db, `games/${gameId}`);
     const now = Date.now();
     const lastUpdate = gameData.updatedAt || now;
-    
-    const elapsed = gameData.started ? (now - lastUpdate) : 0;
+
+    const elapsed = gameData.status !== "waiting" ? (now - lastUpdate) : 0;
     
     let winReasonValue: winReason | null = null;
     const currentTurnAfterMove = chessGame.turn() === "w" ? "white" : "black";
@@ -67,7 +66,7 @@ export class GameService {
     const newTimeLeft = { ...gameData.timeLeft };
     
     // Time management
-    if (newTimeLeft && newTimeLeft[playerWhoJustMoved] !== undefined && gameData.started) {
+    if (newTimeLeft && newTimeLeft[playerWhoJustMoved] !== undefined && gameData.status !== "waiting") {
       newTimeLeft[playerWhoJustMoved] = Math.max(0, newTimeLeft[playerWhoJustMoved] - elapsed);
       const incrementMs = (gameData.increment || 0) * 1000;
       newTimeLeft[playerWhoJustMoved] += incrementMs;
@@ -76,7 +75,7 @@ export class GameService {
     let status = "ongoing";
     let winner: "white" | "black" | "draw" | null = null;
 
-    if (newTimeLeft[playerWhoJustMoved] === 0 && gameData.started) {
+    if (newTimeLeft[playerWhoJustMoved] === 0 && gameData.status !== "waiting") {
       status = "ended";
       winner = playerWhoJustMoved === "white" ? "black" : "white";
       winReasonValue = "timeout";
@@ -109,7 +108,6 @@ export class GameService {
       fen,
       lastMove: { from: move.from, to: move.to, san: move.san },
       updatedAt: Date.now(),
-      started: true,
       status,
       winner,
       moves: [...currentMoves, newMove],
