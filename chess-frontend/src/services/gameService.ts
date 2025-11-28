@@ -9,6 +9,7 @@ import { db, firestore } from "../firebase/config";
 import type { Chess, Move } from "chess.js";
 import type { Game, MoveHistoryType, winReason } from "../types";
 import type { GameSettings } from "../components/CreateGameModal";
+import { calculateEloChange } from "../shared/utils";
 
 export class GameService {
   /**
@@ -137,29 +138,6 @@ export class GameService {
   }
 
   /**
-   * Calculate ELO change
-   */
-  calculateEloChange(
-    winnerElo: number, 
-    loserElo: number, 
-    isDraw: boolean = false
-  ): { winnerChange: number; loserChange: number } {
-    const K = 32;
-    const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
-    const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
-
-    if (isDraw) {
-      const winnerChange = Math.round(K * (0.5 - expectedWinner));
-      const loserChange = Math.round(K * (0.5 - expectedLoser));
-      return { winnerChange, loserChange };
-    }
-
-    const winnerChange = Math.round(K * (1 - expectedWinner));
-    const loserChange = Math.round(K * (0 - expectedLoser));
-    return { winnerChange, loserChange };
-  }
-
-  /**
    * Update Firestore on game end
    */
   async updateFirestoreOnGameEnd(
@@ -180,7 +158,7 @@ export class GameService {
       const blackData = blackDoc.exists() ? blackDoc.data() : { elo: 1200, wins: 0, losses: 0, draws: 0 };
 
       if (winner === "draw") {
-        const { winnerChange: whiteChange, loserChange: blackChange } = this.calculateEloChange(
+        const { winnerChange: whiteChange, loserChange: blackChange } = calculateEloChange(
           whiteData.elo || 1200,
           blackData.elo || 1200,
           true
@@ -210,7 +188,7 @@ export class GameService {
         const winnerRef = winner === "white" ? whitePlayerRef : blackPlayerRef;
         const loserRef = winner === "white" ? blackPlayerRef : whitePlayerRef;
 
-        const { winnerChange, loserChange } = this.calculateEloChange(
+        const { winnerChange, loserChange } = calculateEloChange(
           winnerData.elo || 1200,
           loserData.elo || 1200
         );

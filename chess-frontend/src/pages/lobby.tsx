@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import PlayerProfileModal from "../components/PlayerProfileModal";
 import CreateGameModal, { type GameSettings } from "../components/CreateGameModal";
+import { isGuest, isFull, getPlayerDisplayName } from "../shared/utils";
+import { formatTimeAgo } from "../shared/utils";
 
 export default function Lobby() {
     const [games, setGames] = useState<any[]>([]);
@@ -19,14 +21,6 @@ export default function Lobby() {
     } | null>(null);
     const [showCreateGameModal, setShowCreateGameModal] = useState(false);
     const navigate = useNavigate();
-
-    // Helper: check if player is guest (uid starts with "guest_")
-    const isGuest = (player: any) => {
-        return player?.uid?.startsWith("guest_");
-    };
-
-    // Helper: check if game is full
-    const isFull = (game: any) => game.players?.white && game.players?.black;
 
     // Helper: get button color based on full/not full
     const getButtonClass = (game: any) => {
@@ -61,21 +55,6 @@ export default function Lobby() {
             default:
                 return "❓ Unknown";
         }
-    };
-
-    // Helper: format timestamp to relative time
-    const formatTimeAgo = (timestamp: number) => {
-        const now = Date.now();
-        const diff = now - timestamp;
-        const seconds = Math.floor(diff / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (days > 0) return `${days}d ago`;
-        if (hours > 0) return `${hours}h ago`;
-        if (minutes > 0) return `${minutes}m ago`;
-        return `${seconds}s ago`;
     };
 
     useEffect(() => {
@@ -273,9 +252,7 @@ export default function Lobby() {
                                         <p className="text-xs text-emerald-300/60 mb-1">White</p>
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
-                                                {game.players?.white
-                                                    ? game.players.white.name || game.players.white.displayName || game.players.white.email?.split('@')[0] || (game.players.white.uid ? "Guest" : "Waiting")
-                                                    : "Waiting"}
+                                                {getPlayerDisplayName(game.players?.white)}
                                             </p>
                                             {game.players?.white && (
                                                 isGuest(game.players.white) ? (
@@ -325,9 +302,7 @@ export default function Lobby() {
                                         <p className="text-xs text-emerald-300/60 mb-1">Black</p>
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
-                                                {game.players?.black
-                                                    ? game.players.black.name || game.players.black.displayName || game.players.black.email?.split('@')[0] || (game.players.black.uid ? "Guest" : "Waiting")
-                                                    : "Waiting"}
+                                                {getPlayerDisplayName(game.players?.black)}
                                             </p>
                                             {game.players?.black && (
                                                 isGuest(game.players.black) ? (

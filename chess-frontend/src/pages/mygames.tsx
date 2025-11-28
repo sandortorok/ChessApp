@@ -4,6 +4,8 @@ import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
+import { isGuest, getPlayerDisplayName } from "../shared/utils";
+import { formatTimeAgo } from "../shared/utils";
 
 export default function MyGames() {
     const [games, setGames] = useState<any[]>([]);
@@ -19,26 +21,6 @@ export default function MyGames() {
     } | null>(null);
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Helper: check if player is guest (uid starts with "guest_")
-    const isGuest = (player: any) => {
-        return player?.uid?.startsWith("guest_");
-    };
-
-    // Helper: format timestamp to relative time
-    const formatTimeAgo = (timestamp: number) => {
-        const now = Date.now();
-        const diff = now - timestamp;
-        const seconds = Math.floor(diff / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (days > 0) return `${days}d ago`;
-        if (hours > 0) return `${hours}h ago`;
-        if (minutes > 0) return `${minutes}m ago`;
-        return `${seconds}s ago`;
-    };
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -227,9 +209,7 @@ export default function MyGames() {
                                         <p className="text-xs text-emerald-300/60 mb-1">White</p>
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
-                                                {game.players?.white
-                                                    ? game.players.white.name || game.players.white.displayName || game.players.white.email?.split('@')[0] || (game.players.white.uid ? "Guest" : "Waiting")
-                                                    : "Waiting"}
+                                                {getPlayerDisplayName(game.players?.white)}
                                             </p>
                                             {game.players?.white && (
                                                 isGuest(game.players.white) ? (
@@ -302,9 +282,7 @@ export default function MyGames() {
                                         <p className="text-xs text-emerald-300/60 mb-1">Black</p>
                                         <div className="flex items-center justify-between">
                                             <p className="text-white font-medium">
-                                                {game.players?.black
-                                                    ? game.players.black.name || game.players.black.displayName || game.players.black.email?.split('@')[0] || (game.players.black.uid ? "Guest" : "Waiting")
-                                                    : "Waiting"}
+                                                {getPlayerDisplayName(game.players?.black)}
                                             </p>
                                             {game.players?.black && (
                                                 isGuest(game.players.black) ? (
@@ -354,7 +332,7 @@ export default function MyGames() {
                         </div>
                         <div>
                             <p className="text-white font-semibold">
-                                {profileDropdown.player.name || profileDropdown.player.displayName || profileDropdown.player.email?.split('@')[0] || "Guest"}
+                                {getPlayerDisplayName(profileDropdown.player)}
                             </p>
                             {!isGuest(profileDropdown.player) && (
                                 <div className="flex items-center gap-2">
