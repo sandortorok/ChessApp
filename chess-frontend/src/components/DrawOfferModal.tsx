@@ -1,10 +1,13 @@
 interface DrawOfferModalProps {
+    isOpen: boolean;
     opponentName: string;
     onAccept: () => void;
     onDecline: () => void;
 }
 
-export default function DrawOfferModal({ opponentName, onAccept, onDecline }: DrawOfferModalProps) {
+export default function DrawOfferModal({ isOpen, opponentName, onAccept, onDecline }: DrawOfferModalProps) {
+    if (!isOpen) return null;
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000] animate-fadeIn">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-teal-500/50 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scaleIn">
@@ -45,29 +48,6 @@ export default function DrawOfferModal({ opponentName, onAccept, onDecline }: Dr
                     </button>
                 </div>
             </div>
-
-            <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes scaleIn {
-                    from { 
-                        opacity: 0;
-                        transform: scale(0.9);
-                    }
-                    to { 
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-                .animate-fadeIn {
-                    animation: fadeIn 0.2s ease-out;
-                }
-                .animate-scaleIn {
-                    animation: scaleIn 0.3s ease-out;
-                }
-            `}</style>
         </div>
     );
 }

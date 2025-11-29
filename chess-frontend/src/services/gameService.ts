@@ -79,16 +79,17 @@ export class GameService {
 
     let status = "ongoing";
     let winner: "white" | "black" | "draw" | null = null;
-
-    if (newTimeLeft[gameData.turn === "white" ? "black" : "white"] === 0 && gameData.status !== "waiting") {
+    //Mivel már léptünk, az előző játékos volt a lépő
+    const playerMoved = gameData.turn === "white" ? "black" : "white";
+    if (newTimeLeft[playerMoved] === 0 && gameData.status !== "waiting") {
       status = "ended";
-      winner = gameData.turn === "white" ? "black" : "white";
+      winner = playerMoved;
       winReasonValue = "timeout";
     }
 
     if (chessGame.isCheckmate()) {
       status = "ended";
-      winner = chessGame.turn() === "w" ? "black" : "white";
+      winner = playerMoved;
       winReasonValue = "checkmate";
     } else if (this.getDrawReason(chessGame)) {
       status = "ended";

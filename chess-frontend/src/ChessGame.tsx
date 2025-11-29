@@ -4,20 +4,21 @@ import { useParams, useLocation } from "react-router-dom";
 import { ref, onValue, update, DataSnapshot } from "firebase/database";
 import { db, auth } from "./firebase/config";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { Chessboard } from "react-chessboard";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import type { Square, Game, MoveHistoryType } from "./types";
-import PlayerInfo from "./PlayerInfo";
-import ChessClock from "./components/ChessClock";
 import MoveHistory from "./components/moveHistory";
 import ChatBox from "./components/ChatBox";
 import GameEndModal from "./components/GameEndModal";
 import ConfirmSurrenderModal from "./components/ConfirmSurrenderModal";
 import DrawOfferModal from "./components/DrawOfferModal";
+import PlayerInfoWithClock from "./components/PlayerInfoWithClock";
+import ChessboardWrapper from "./components/ChessboardWrapper";
+import GameActionButtons from "./components/GameActionButtons";
 import type { GameSettings } from "./components/CreateGameModal";
 import { gameService } from "./services/gameService";
 import { playerService } from "./services/playerService";
 import { useGameInitializer } from "./hooks/useGameInitializer";
+import { getGameLayout, getPlayerEloData } from "./utils/gameLayoutHelpers";
 
 export default function ChessGame() {
     const { gameId } = useParams<{ gameId: string }>();
@@ -56,7 +57,7 @@ export default function ChessGame() {
     //Create game if not exists
     useGameInitializer(gameId, gameSettings, currentUser);
 
-    // Player joining
+    // Join game if not already joined
     useEffect(() => {
         if (!gameId || !currentUser) return;
 
@@ -239,9 +240,7 @@ export default function ChessGame() {
             const newFen = chessGame.fen();
             setChessPosition(newFen);
             setLastMoveSquares({ from: moveFrom as Square, to: square as Square });
-
             gameService.updateGameInDb(gameId!, gameData!, chessGame, newFen, move);
-            //todo: handle elo changes if game ended
             setMoveFrom("");
             setOptionSquares({});
         } catch {
@@ -266,7 +265,6 @@ export default function ChessGame() {
             gameService.updateGameInDb(gameId!, gameData!, chessGame, chessGame.fen(), move);
             setChessPosition(chessGame.fen());
             setLastMoveSquares({ from: sourceSquare as Square, to: targetSquare as Square });
-            //TODO handle elo changes if game ended
             setOptionSquares({});
             setMoveFrom("");
             return true;
@@ -468,27 +466,12 @@ export default function ChessGame() {
         }
     }
 
-    const isWhite = currentUser?.uid === gameData?.players?.white?.uid;
-    const boardOrientation = isWhite ? "white" : "black";
+    // Game layout helpers
+    const { boardOrientation, topPlayer, bottomPlayer, topPlayerColor, bottomPlayerColor } =
+        getGameLayout(currentUser, gameData);
 
-    const topPlayer = isWhite ? gameData?.players?.black : gameData?.players?.white;
-    const bottomPlayer = isWhite ? gameData?.players?.white : gameData?.players?.black;
-
-    const topPlayerColor = isWhite ? "black" : "white";
-    const bottomPlayerColor = isWhite ? "white" : "black";
-
-    const topPlayerStartingElo = gameData?.startingElo?.[topPlayerColor];
-    const bottomPlayerStartingElo = gameData?.startingElo?.[bottomPlayerColor];
-
-    const topPlayerCurrentElo = gameData?.finalElo?.[topPlayerColor] || gameData?.startingElo?.[topPlayerColor] || topPlayer?.elo;
-    const bottomPlayerCurrentElo = gameData?.finalElo?.[bottomPlayerColor] || gameData?.startingElo?.[bottomPlayerColor] || bottomPlayer?.elo;
-
-    const topPlayerEloChange = (gameData?.finalElo?.[topPlayerColor] && gameData?.startingElo?.[topPlayerColor])
-        ? gameData.finalElo[topPlayerColor] - gameData.startingElo[topPlayerColor]
-        : 0;
-    const bottomPlayerEloChange = (gameData?.finalElo?.[bottomPlayerColor] && gameData?.startingElo?.[bottomPlayerColor])
-        ? gameData.finalElo[bottomPlayerColor] - gameData.startingElo[bottomPlayerColor]
-        : 0;
+    const topPlayerElo = getPlayerEloData(gameData, topPlayerColor, topPlayer);
+    const bottomPlayerElo = getPlayerEloData(gameData, bottomPlayerColor, bottomPlayer);
 
     const combinedSquareStyles = {
         ...optionSquares,
@@ -521,102 +504,41 @@ export default function ChessGame() {
                     {/* Bal oszlop: PlayerInfo - Chessboard - PlayerInfo */}
                     <div className="flex flex-col lg:flex-[2] gap-3">
                         {/* Felső játékos */}
-                        <div className="w-full max-w-[470px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 transition-all duration-300">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
-                            <div className="relative flex justify-start items-center gap-4 z-10">
-                                <PlayerInfo
-                                    color={isWhite ? "black" : "white"}
-                                    player={topPlayer ?? null}
-                                    position="top"
-                                    startingElo={topPlayerStartingElo}
-                                    currentElo={topPlayerCurrentElo}
-                                    eloChange={topPlayerEloChange}
-                                />
-                                <div className="ml-auto">
-                                    <ChessClock
-                                        initialTime={timeLeft[isWhite ? "black" : "white"]}
-                                        active={currentTurn === (isWhite ? "black" : "white") && gameData?.status !== "ended" && gameData?.status !== "waiting"}
-                                        onTimeExpired={() => handleTimeExpired(isWhite ? "black" : "white")}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <PlayerInfoWithClock
+                            color={topPlayerColor}
+                            player={topPlayer ?? null}
+                            position="top"
+                            startingElo={topPlayerElo.startingElo}
+                            currentElo={topPlayerElo.currentElo}
+                            eloChange={topPlayerElo.eloChange}
+                            initialTime={timeLeft[topPlayerColor]}
+                            active={currentTurn === topPlayerColor && gameData?.status !== "ended" && gameData?.status !== "waiting"}
+                            onTimeExpired={() => handleTimeExpired(topPlayerColor)}
+                        />
 
                         {/* Sakktábla */}
-                        <div className="flex-1 w-full max-w-[470px] mx-auto relative group flex items-center justify-center">
-                            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-2xl blur-xl transition-all duration-300" />
-                            <div className="relative rounded-xl overflow-hidden border-2 border-teal-500/30 shadow-2xl">
-                                <Chessboard
-                                    options={{
-                                        position: chessPosition,
-                                        onSquareClick,
-                                        onPieceDrop,
-                                        squareStyles: combinedSquareStyles,
-                                        darkSquareStyle: { backgroundColor: "#08947aff" },
-                                        boardOrientation,
-                                        lightSquareStyle: { backgroundColor: "#d1fae5" },
-                                    }}
-                                />
-                            </div>
-                            {viewingHistoryIndex !== null && (
-                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full blur-lg opacity-70" />
-                                        <div className="relative bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 text-gray-900 px-5 py-1.5 rounded-full font-bold text-xs shadow-xl border-2 border-white/30 animate-gradient">
-                                            📜 Történet megtekintése
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {gameData?.status === "waiting" && gameData.players?.white && gameData.players?.black && (
-                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl blur-2xl opacity-60" />
-                                        <div className="relative bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 text-gray-900 px-8 py-3 rounded-2xl font-bold text-lg shadow-2xl border-4 border-white/40 animate-pulse">
-                                            ⏳ WAITING
-                                            <div className="text-xs font-normal mt-1 opacity-80">Waiting for first move...</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {gameData?.status === "waiting" && (!gameData.players?.white || !gameData.players?.black) && (
-                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-2xl opacity-60" />
-                                        <div className="relative bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 text-gray-900 px-8 py-3 rounded-2xl font-bold text-lg shadow-2xl border-4 border-white/40 animate-pulse">
-                                            👥 WAITING FOR PLAYERS
-                                            <div className="text-xs font-normal mt-1 opacity-80">
-                                                {!gameData.players?.white && !gameData.players?.black && "Waiting for both players..."}
-                                                {gameData.players?.white && !gameData.players?.black && "Waiting for Black player..."}
-                                                {!gameData.players?.white && gameData.players?.black && "Waiting for White player..."}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <ChessboardWrapper
+                            position={chessPosition}
+                            onSquareClick={onSquareClick}
+                            onPieceDrop={onPieceDrop}
+                            squareStyles={combinedSquareStyles}
+                            boardOrientation={boardOrientation}
+                            viewingHistoryIndex={viewingHistoryIndex}
+                            gameData={gameData}
+                        />
 
                         {/* Alsó játékos */}
-                        <div className="w-full max-w-[470px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 transition-all duration-300">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
-                            <div className="relative flex justify-start items-center gap-4 z-10">
-                                <PlayerInfo
-                                    color={isWhite ? "white" : "black"}
-                                    player={bottomPlayer ?? null}
-                                    position="bottom"
-                                    startingElo={bottomPlayerStartingElo}
-                                    currentElo={bottomPlayerCurrentElo}
-                                    eloChange={bottomPlayerEloChange}
-                                />
-                                <div className="ml-auto">
-                                    <ChessClock
-                                        initialTime={timeLeft[isWhite ? "white" : "black"]}
-                                        active={currentTurn === (isWhite ? "white" : "black") && gameData?.status !== "ended" && gameData?.status !== "waiting"}
-                                        onTimeExpired={() => handleTimeExpired(isWhite ? "white" : "black")}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <PlayerInfoWithClock
+                            color={bottomPlayerColor}
+                            player={bottomPlayer ?? null}
+                            position="bottom"
+                            startingElo={bottomPlayerElo.startingElo}
+                            currentElo={bottomPlayerElo.currentElo}
+                            eloChange={bottomPlayerElo.eloChange}
+                            initialTime={timeLeft[bottomPlayerColor]}
+                            active={currentTurn === bottomPlayerColor && gameData?.status !== "ended" && gameData?.status !== "waiting"}
+                            onTimeExpired={() => handleTimeExpired(bottomPlayerColor)}
+                        />
                     </div>
 
                     {/* Jobb oszlop: ViewHistory - Gombok - ChatBox */}
@@ -632,41 +554,13 @@ export default function ChessGame() {
                         </div>
 
                         {/* Game action buttons */}
-                        {gameData?.status !== "ended" && (moveHistory.length <= 1 || moveHistory.length > 1) && (
-                            <div className="flex gap-3 justify-center items-center py-2">
-                                {moveHistory.length <= 1 && (
-                                    <button
-                                        onClick={handleAbort}
-                                        className="relative px-6 py-2.5 bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 font-semibold rounded-lg border border-orange-600/30 hover:border-orange-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
-                                    >
-                                        <span className="relative flex items-center gap-2">
-                                            ⛔ Megszakítás
-                                        </span>
-                                    </button>
-                                )}
-
-                                {moveHistory.length > 1 && (
-                                    <>
-                                        <button
-                                            onClick={handleOfferDraw}
-                                            className="relative px-6 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg border border-emerald-600/30 hover:border-emerald-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
-                                        >
-                                            <span className="relative flex items-center gap-2">
-                                                🤝 Döntetlen
-                                            </span>
-                                        </button>
-
-                                        <button
-                                            onClick={handleSurrender}
-                                            className="relative px-6 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 font-semibold rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
-                                        >
-                                            <span className="relative flex items-center gap-2">
-                                                🏳️ Feladás
-                                            </span>
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                        {gameData?.status !== "ended" && (
+                            <GameActionButtons
+                                moveHistoryLength={moveHistory.length}
+                                onAbort={handleAbort}
+                                onOfferDraw={handleOfferDraw}
+                                onSurrender={handleSurrender}
+                            />
                         )}
 
                         {/* Chat Box */}
@@ -689,33 +583,6 @@ export default function ChessGame() {
                         </div>
                     </div>
                 </div>
-
-                <style>{`
-                    @keyframes float {
-                        0%, 100% { transform: translateY(0px) rotate(0deg); }
-                        50% { transform: translateY(-20px) rotate(5deg); }
-                    }
-                    @keyframes gradient {
-                        0%, 100% { background-position: 0% 50%; }
-                        50% { background-position: 100% 50%; }
-                    }
-                    .animate-float {
-                        animation: float 6s ease-in-out infinite;
-                    }
-                    .delay-1000 {
-                        animation-delay: 1s;
-                    }
-                    .delay-2000 {
-                        animation-delay: 2s;
-                    }
-                    .delay-3000 {
-                        animation-delay: 3s;
-                    }
-                    .animate-gradient {
-                        background-size: 200% 200%;
-                        animation: gradient 3s ease infinite;
-                    }
-                `}</style>
             </div>
 
             <GameEndModal
@@ -740,19 +607,18 @@ export default function ChessGame() {
                 onConfirm={confirmSurrender}
                 onCancel={() => setShowSurrenderConfirm(false)}
             />
-            {showDrawOfferModal && drawOfferedBy && (
-                <DrawOfferModal
-                    opponentName={
-                        gameData?.players?.white?.uid === drawOfferedBy
-                            ? (gameData.players.white.displayName || gameData.players.white.email?.split('@')[0] || "Ellenfél")
-                            : gameData?.players?.black?.uid === drawOfferedBy
-                            ? (gameData.players.black.displayName || gameData.players.black.email?.split('@')[0] || "Ellenfél")
-                            : "Ellenfél"
-                    }
-                    onAccept={handleAcceptDraw}
-                    onDecline={handleDeclineDraw}
-                />
-            )}
+            <DrawOfferModal
+                isOpen={showDrawOfferModal && !!drawOfferedBy}
+                opponentName={
+                    gameData?.players?.white?.uid === drawOfferedBy
+                        ? (gameData.players.white.displayName || gameData.players.white.email?.split('@')[0] || "Ellenfél")
+                        : gameData?.players?.black?.uid === drawOfferedBy
+                        ? (gameData.players.black.displayName || gameData.players.black.email?.split('@')[0] || "Ellenfél")
+                        : "Ellenfél"
+                }
+                onAccept={handleAcceptDraw}
+                onDecline={handleDeclineDraw}
+            />
         </>
     );
 }
