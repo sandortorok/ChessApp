@@ -10,7 +10,7 @@ const navigation = [
   { name: "Home", href: "/" },
   { name: "Profile", href: "/profile" },
   { name: "Lobbies", href: "/lobby" },
-  { name: "My Games", href: "/mygames" },
+  { name: "Game History", href: "/game-history" },
   { name: "Leaderboard", href: "/leaderboard" },
 ];
 

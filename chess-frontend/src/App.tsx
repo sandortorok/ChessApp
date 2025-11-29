@@ -6,7 +6,7 @@ import { HomePage } from '@/features/home';
 import { LoginForm, RegisterForm } from '@/features/auth';
 import { ChessGame } from '@/features/game';
 import { LobbyPage } from '@/features/lobby';
-import { MyGamesPage } from '@/features/game-history';
+import { GameHistoryPage } from '@/features/game-history';
 import { LeaderboardPage } from '@/features/leaderboard';
 import { SettingsPage } from '@/features/settings';
 
@@ -21,7 +21,7 @@ function App() {
         <Route path="/" element={<Layout><HomePage /></Layout>} />
         <Route path="/profile" element={<Layout><SettingsPage /></Layout>} />
         <Route path="/lobby" element={<Layout><LobbyPage /></Layout>} />
-        <Route path="/mygames" element={<Layout><MyGamesPage /></Layout>} />
+        <Route path="/game-history" element={<Layout><GameHistoryPage /></Layout>} />
         <Route path="/leaderboard" element={<Layout><LeaderboardPage /></Layout>} />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
