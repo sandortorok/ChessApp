@@ -3,11 +3,41 @@
  * Handles player-related operations (joining games, user data)
  */
 
-import { ref, set } from "firebase/database";
+import { ref, set, get, update } from "firebase/database";
 import { doc, getDoc } from "firebase/firestore";
 import { db, firestore } from "../firebase/config";
 import type { User } from "firebase/auth";
 import type { Game } from "../types";
+
+// Constants
+const DEFAULT_ELO = 1200;
+const DEFAULT_STATS = { elo: DEFAULT_ELO, wins: 0, losses: 0, draws: 0 };
+
+// Types
+interface PlayerStats {
+  elo: number;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+// Helper functions
+function createDefaultStats(): PlayerStats {
+  return { ...DEFAULT_STATS };
+}
+
+function parsePlayerStats(data: any): PlayerStats {
+  return {
+    elo: data?.elo ?? DEFAULT_ELO,
+    wins: data?.wins ?? 0,
+    losses: data?.losses ?? 0,
+    draws: data?.draws ?? 0,
+  };
+}
+
+async function fetchUserDocument(userId: string) {
+  return await getDoc(doc(firestore, "users", userId));
+}
 
 export class PlayerService {
   /**
@@ -15,9 +45,14 @@ export class PlayerService {
    */
   async joinGame(
     gameId: string,
-    user: User,
-    gameData: Game
+    user: User
   ): Promise<"white" | "black" | null> {
+    // Lekérdezi a gameData-t
+    const gameSnapshot = await get(ref(db, `games/${gameId}`));
+    const gameData: Game = gameSnapshot.val();
+
+    if (!gameData) return null;
+
     const currentPlayers = gameData.players ?? { white: null, black: null };
 
     // Check if already joined
@@ -42,23 +77,23 @@ export class PlayerService {
     }
 
     // Get player data from Firestore
-    const userDoc = await getDoc(doc(firestore, "users", user.uid));
-    const userData = userDoc.exists() 
-      ? userDoc.data() 
-      : { elo: 1200, wins: 0, losses: 0, draws: 0 };
+    const userData = await this.getPlayerData(user.uid);
 
     const newPlayer = {
       uid: user.uid,
       name: user.displayName || user.email, // Ezt használja a PlayerInfo komponens
       displayName: user.displayName,
       email: user.email,
-      elo: userData.elo || 1200,
-      wins: userData.wins || 0,
-      losses: userData.losses || 0,
-      draws: userData.draws || 0,
+      ...userData,
     };
 
     await set(ref(db, `games/${gameId}/players/${sideToJoin}`), newPlayer);
+
+    // Save starting ELO for this player
+    await update(ref(db, `games/${gameId}/startingElo`), {
+      [sideToJoin]: userData.elo
+    });
+
     console.log(`Player ${user.displayName || user.email} joined as ${sideToJoin}`);
 
     return sideToJoin;
@@ -93,28 +128,18 @@ export class PlayerService {
 
   /**
    * Get player data from Firestore
+   * Returns default stats if user doesn't exist or on error
    */
-  async getPlayerData(userId: string): Promise<{
-    elo: number;
-    wins: number;
-    losses: number;
-    draws: number;
-  }> {
+  async getPlayerData(userId: string): Promise<PlayerStats> {
     try {
-      const userDoc = await getDoc(doc(firestore, "users", userId));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        return {
-          elo: data.elo || 1200,
-          wins: data.wins || 0,
-          losses: data.losses || 0,
-          draws: data.draws || 0,
-        };
-      }
-      return { elo: 1200, wins: 0, losses: 0, draws: 0 };
+      const userDoc = await fetchUserDocument(userId);
+      
+      return userDoc.exists() 
+        ? parsePlayerStats(userDoc.data())
+        : createDefaultStats();
     } catch (error) {
       console.error("Error getting player data:", error);
-      return { elo: 1200, wins: 0, losses: 0, draws: 0 };
+      return createDefaultStats();
     }
   }
 

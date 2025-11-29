@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Chess, Move } from "chess.js";
+import { Chess } from "chess.js";
 import { useParams, useLocation } from "react-router-dom";
-import { ref, onValue, get, update } from "firebase/database";
+import { ref, onValue, update, DataSnapshot } from "firebase/database";
 import { db, auth } from "./firebase/config";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import ChessGameView from "./ChessGameView";
+import { Chessboard } from "react-chessboard";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
-import type { Square, winReason, Game, MoveHistoryType } from "./types";
+import type { Square, Game, MoveHistoryType } from "./types";
+import PlayerInfo from "./PlayerInfo";
+import ChessClock from "./components/ChessClock";
+import MoveHistory from "./components/moveHistory";
+import ChatBox from "./components/ChatBox";
 import GameEndModal from "./components/GameEndModal";
 import ConfirmSurrenderModal from "./components/ConfirmSurrenderModal";
 import DrawOfferModal from "./components/DrawOfferModal";
@@ -18,7 +22,7 @@ import { useGameInitializer } from "./hooks/useGameInitializer";
 export default function ChessGame() {
     const { gameId } = useParams<{ gameId: string }>();
     const location = useLocation();
-    const gameSettings = (location.state as { gameSettings?: GameSettings })?.gameSettings;
+    const gameSettings = (location.state as { gameSettings: GameSettings })?.gameSettings;
     
     const chessGameRef = useRef(new Chess());
     const chessGame = chessGameRef.current;
@@ -39,8 +43,6 @@ export default function ChessGame() {
     const [prevStatus, setPrevStatus] = useState(gameData?.status);
 
     const [showEndModal, setShowEndModal] = useState(false);
-    const [winReason, setWinReason] = useState<winReason>("checkmate");
-    const [eloChanges, setEloChanges] = useState<{ whiteChange: number; blackChange: number } | null>(null);
     const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false);
     const [showDrawOfferModal, setShowDrawOfferModal] = useState(false);
     const [drawOfferedBy, setDrawOfferedBy] = useState<string | null>(null);
@@ -52,93 +54,61 @@ export default function ChessGame() {
     }, []);
 
     //Create game if not exists
-    useGameInitializer(gameId, gameSettings);
+    useGameInitializer(gameId, gameSettings, currentUser);
+
+    // Player joining
+    useEffect(() => {
+        if (!gameId || !currentUser) return;
+
+        playerService.joinGame(gameId, currentUser)
+            .catch(error => console.error("Error joining game:", error));
+    }, [gameId, currentUser]);
 
     // Game listener
     useEffect(() => {
         if (!gameId || !currentUser) return;
 
         const gameRef = ref(db, `games/${gameId}`);
-
-        const unsubscribe = onValue(gameRef, async (snap) => {
-            const game: Game = snap.val();
-            if (!game) return;
-            //Ha éppen néztük a historyt akkor is frissüljön a játék
-            setViewingHistoryIndex(null);
-            chessGame.load(game.fen);
-
-            // Csak akkor számoljuk az időt, ha a játék folyamatban van
-            if (game.timeLeft && game.status === "ongoing") {
-                const now = Date.now();
-                const elapsed = now - game.updatedAt; // mennyi idő telt el az utolsó lépés óta
-
-                const currentTurn = chessGame.turn() === "w" ? "white" : "black";
-                setTimeLeft({
-                    ...game.timeLeft,
-                    [currentTurn]: Math.max(0, game.timeLeft[currentTurn] - elapsed),
-                });
-            } else if (game.timeLeft) {
-                // Ha a játék még nem indult el VAGY véget ért, csak betöltjük az utolsó mentett időt
-                setTimeLeft(game.timeLeft);
-            }
-            setGameData(game);
-
-            // Lépéstörténet betöltése
-            if (game.moves && Array.isArray(game.moves)) {
-                setMoveHistory(game.moves);
-            }
-
-            // Ha nem nézünk vissza a történetben, frissítjük a pozíciót
-            if (viewingHistoryIndex === null) {
-                // FEN már be lett töltve fentebb, csak a pozíciót és a kiemelt négyzeteket frissítjük
-                if (game.fen && game.fen !== chessPosition) {
-                    setChessPosition(game.fen);
-                }
-
-                if (game.lastMove) {
-                    setLastMoveSquares({ from: game.lastMove.from, to: game.lastMove.to });
-                }
-            }
-
-            // Játékoshoz csatlakozás - Service-t használjuk
-            await playerService.joinGame(gameId, currentUser, game);
-        });
+        const unsubscribe = onValue(gameRef, handleGameUpdate);
 
         return () => unsubscribe();
     }, [gameId, currentUser]);
-    
-    // Kezdő ELO mentése amikor mindkét játékos csatlakozott
-    useEffect(() => {
-        if (!gameId || !gameData || gameData.startingElo) return;
+    function handleGameUpdate(snap: DataSnapshot) {
+        const game: Game = snap.val();
+        if (!game) return;
 
-        const bothPlayersJoined = gameData.players?.white && gameData.players?.black;
-        if (!bothPlayersJoined) return;
-
-        async function saveStartingElo() {
-            if (!gameId || !gameData?.players?.white || !gameData?.players?.black) return;
-
-            try {
-                // Service-t használjuk a kezdő ELO mentésére
-                await gameService.saveStartingElo(
-                    gameId, 
-                    gameData.players.white.uid, 
-                    gameData.players.black.uid
-                );
-            } catch (error) {
-                console.error("Error saving starting ELO:", error);
-            }
+        // Pozíció szinkronizálás
+        setViewingHistoryIndex(null);
+        setChessPosition(game.fen);
+        // Utolsó lépés kiemelése
+        setLastMoveSquares(
+            game.lastMove ? { from: game.lastMove.from, to: game.lastMove.to } : null
+        );
+        chessGame.load(game.fen);
+        
+        
+        // Idő számítása
+        if (game.timeLeft) {
+            const elapsed = game.status === "ongoing" ? Date.now() - game.updatedAt : 0;
+            const currentTurnSide = chessGame.turn() === "w" ? "white" : "black";
+            
+            setTimeLeft({
+                ...game.timeLeft,
+                [currentTurnSide]: Math.max(0, game.timeLeft[currentTurnSide] - elapsed),
+            });
         }
+        // Játék adatok és lépéstörténet mentése
+        setGameData(game);
+        setMoveHistory(game.moves || []);
+        
+    }
 
-        saveStartingElo();
-    }, [gameId, gameData?.players, gameData?.startingElo]);
-    
     // Játék vége modal megjelenítése
     useEffect(() => {
         if (!gameData) return;
 
         // Játék vége modal megjelenítése mindenkinek (játékosoknak és nézőknek is)
         if (gameData.status === "ended" && !showEndModal && prevStatus !== "ended") {
-            setWinReason(gameData.winReason || "checkmate");
             setShowEndModal(true);
         }
         setPrevStatus(gameData.status);
@@ -180,27 +150,6 @@ export default function ChessGame() {
         
         const mySideColor = mySide === "white" ? "w" : "b";
         return piece.color === mySideColor;
-    }
-
-    async function updateGameInDb(fen: string, move: Move) {
-        if (!gameId || !gameData) return;
-        
-        // Service-t használjuk a játék frissítéséhez
-        const eloChanges = await gameService.updateGameInDb(gameId, gameData, chessGame, fen, move);
-        
-        // Frissítjük az időt manuálisan, mert a service az adatbázisba menti
-        // De az adatbázis listener majd frissíti a state-et
-        
-        // Ha van ELO változás (játék véget ért)
-        if (eloChanges) {
-            setEloChanges(eloChanges);
-        }
-    }
-    
-    // Firestore frissítés játék végén - Service-t használjuk
-    async function updateFirestoreOnGameEnd(winner: "white" | "black" | "draw" | null): Promise<{ whiteChange: number; blackChange: number } | null> {
-        if (!gameId || !gameData) return null;
-        return await gameService.updateFirestoreOnGameEnd(gameId, gameData, winner);
     }
 
     function getRemainingTime(side: "white" | "black") {
@@ -290,7 +239,9 @@ export default function ChessGame() {
             const newFen = chessGame.fen();
             setChessPosition(newFen);
             setLastMoveSquares({ from: moveFrom as Square, to: square as Square });
-            updateGameInDb(newFen, move);
+
+            gameService.updateGameInDb(gameId!, gameData!, chessGame, newFen, move);
+            //todo: handle elo changes if game ended
             setMoveFrom("");
             setOptionSquares({});
         } catch {
@@ -309,12 +260,13 @@ export default function ChessGame() {
         if (!targetSquare) return false;
 
         try {
-            const move = chessGame.move({ from: sourceSquare, to: targetSquare, promotion: "q" });
+            if (!gameService.isLegalMove(chessGame, sourceSquare, targetSquare)) return false;            
+            const move = gameService.move(chessGame, sourceSquare, targetSquare);
             if (!move) return false;
-            const newFen = chessGame.fen();
-            setChessPosition(newFen);
+            gameService.updateGameInDb(gameId!, gameData!, chessGame, chessGame.fen(), move);
+            setChessPosition(chessGame.fen());
             setLastMoveSquares({ from: sourceSquare as Square, to: targetSquare as Square });
-            updateGameInDb(newFen, move);
+            //TODO handle elo changes if game ended
             setOptionSquares({});
             setMoveFrom("");
             return true;
@@ -387,12 +339,8 @@ export default function ChessGame() {
             console.log("Draw accepted!");
             
             // Frissítjük a Firestore-t
-            const changes = await updateFirestoreOnGameEnd("draw");
-            if (changes) {
-                setEloChanges(changes);
-            }
+            await gameService.updateFirestoreOnGameEnd(gameId, gameData, "draw");
             
-            setWinReason("aggreement");
             setShowDrawOfferModal(false);
             setShowEndModal(true);
         } catch (err) {
@@ -442,7 +390,6 @@ export default function ChessGame() {
             console.log("Game aborted without ELO changes");
             
             // NEM frissítjük a Firestore-t (nincs ELO változás)
-            setWinReason("aborted");
             setShowEndModal(true);
         } catch (err) {
             console.error("Error aborting game:", err);
@@ -489,12 +436,8 @@ export default function ChessGame() {
             console.log(`${mySide} surrendered, ${winner} wins!`);
             
             // Frissítjük a Firestore-t
-            const changes = await updateFirestoreOnGameEnd(winner);
-            if (changes) {
-                setEloChanges(changes);
-            }
+            await gameService.updateFirestoreOnGameEnd(gameId, gameData, winner);
             
-            setWinReason("resignation");
             setShowEndModal(true);
         } catch (err) {
             console.error("Error updating game on surrender:", err);
@@ -502,7 +445,7 @@ export default function ChessGame() {
     }
     // Callback amikor lejár valamelyik játékos ideje
     async function handleTimeExpired(side: "white" | "black") {
-        if (!gameId || gameData?.status === "ended") return;
+        if (!gameId || !gameData || gameData.status === "ended") return;
 
         const gameRef = ref(db, `games/${gameId}`);
         const winner = side === "white" ? "black" : "white";
@@ -517,53 +460,272 @@ export default function ChessGame() {
             console.log(`Time expired for ${side}, ${winner} wins!`);
             
             // Frissítjük a Firestore-t
-            const changes = await updateFirestoreOnGameEnd(winner);
-            if (changes) {
-                setEloChanges(changes);
-            }
+            await gameService.updateFirestoreOnGameEnd(gameId, gameData, winner);
             
-            setWinReason("timeout");
             setShowEndModal(true);
         } catch (err) {
             console.error("Error updating game on timeout:", err);
         }
     }
 
+    const isWhite = currentUser?.uid === gameData?.players?.white?.uid;
+    const boardOrientation = isWhite ? "white" : "black";
+
+    const topPlayer = isWhite ? gameData?.players?.black : gameData?.players?.white;
+    const bottomPlayer = isWhite ? gameData?.players?.white : gameData?.players?.black;
+
+    const topPlayerColor = isWhite ? "black" : "white";
+    const bottomPlayerColor = isWhite ? "white" : "black";
+
+    const topPlayerStartingElo = gameData?.startingElo?.[topPlayerColor];
+    const bottomPlayerStartingElo = gameData?.startingElo?.[bottomPlayerColor];
+
+    const topPlayerCurrentElo = gameData?.finalElo?.[topPlayerColor] || gameData?.startingElo?.[topPlayerColor] || topPlayer?.elo;
+    const bottomPlayerCurrentElo = gameData?.finalElo?.[bottomPlayerColor] || gameData?.startingElo?.[bottomPlayerColor] || bottomPlayer?.elo;
+
+    const topPlayerEloChange = (gameData?.finalElo?.[topPlayerColor] && gameData?.startingElo?.[topPlayerColor])
+        ? gameData.finalElo[topPlayerColor] - gameData.startingElo[topPlayerColor]
+        : 0;
+    const bottomPlayerEloChange = (gameData?.finalElo?.[bottomPlayerColor] && gameData?.startingElo?.[bottomPlayerColor])
+        ? gameData.finalElo[bottomPlayerColor] - gameData.startingElo[bottomPlayerColor]
+        : 0;
+
+    const combinedSquareStyles = {
+        ...optionSquares,
+        ...(lastMoveSquares
+            ? {
+                [lastMoveSquares.from]: { background: "rgba(20, 184, 166, 0.4)" },
+                [lastMoveSquares.to]: { background: "rgba(20, 184, 166, 0.4)" },
+            }
+            : {}),
+    };
+
     return (
         <>
-            <ChessGameView
-                chessPosition={chessPosition}
-                optionSquares={optionSquares}
-                lastMoveSquares={lastMoveSquares}
-                players={gameData?.players || null}
-                currentUser={currentUser}
-                currentTurn={currentTurn}
-                moveHistory={moveHistory}
-                viewingHistoryIndex={viewingHistoryIndex}
-                timeLeft={timeLeft}
-                gameStatus={gameData?.status}
-                startingElo={gameData?.startingElo}
-                finalElo={gameData?.finalElo}
-                eloChanges={eloChanges}
-                gameId={gameId}
-                onSquareClick={onSquareClick}
-                onPieceDrop={onPieceDrop}
-                onViewMove={viewMove}
-                onGoToLatest={goToLatestPosition}
-                onTimeExpired={handleTimeExpired}
-                onOfferDraw={handleOfferDraw}
-                onAbort={handleAbort}
-                onSurrender={handleSurrender}
-            />
+            <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-teal-950 to-gray-900 min-w-full flex flex-col">
+                {/* Animated background */}
+                <div className="absolute inset-0">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(20,184,166,0.15),transparent_50%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.15),transparent_50%)]" />
+                </div>
+
+                {/* Floating chess pieces */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+                    <div className="absolute top-20 left-10 text-6xl animate-float">♔</div>
+                    <div className="absolute top-40 right-20 text-5xl animate-float delay-1000">♕</div>
+                    <div className="absolute bottom-32 left-1/4 text-7xl animate-float delay-2000">♖</div>
+                    <div className="absolute bottom-20 right-1/3 text-6xl animate-float delay-3000">♗</div>
+                </div>
+
+                <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row lg:h-screen gap-4 p-3 lg:p-4">
+                    {/* Bal oszlop: PlayerInfo - Chessboard - PlayerInfo */}
+                    <div className="flex flex-col lg:flex-[2] gap-3">
+                        {/* Felső játékos */}
+                        <div className="w-full max-w-[470px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 transition-all duration-300">
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
+                            <div className="relative flex justify-start items-center gap-4 z-10">
+                                <PlayerInfo
+                                    color={isWhite ? "black" : "white"}
+                                    player={topPlayer ?? null}
+                                    position="top"
+                                    startingElo={topPlayerStartingElo}
+                                    currentElo={topPlayerCurrentElo}
+                                    eloChange={topPlayerEloChange}
+                                />
+                                <div className="ml-auto">
+                                    <ChessClock
+                                        initialTime={timeLeft[isWhite ? "black" : "white"]}
+                                        active={currentTurn === (isWhite ? "black" : "white") && gameData?.status !== "ended" && gameData?.status !== "waiting"}
+                                        onTimeExpired={() => handleTimeExpired(isWhite ? "black" : "white")}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sakktábla */}
+                        <div className="flex-1 w-full max-w-[470px] mx-auto relative group flex items-center justify-center">
+                            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-2xl blur-xl transition-all duration-300" />
+                            <div className="relative rounded-xl overflow-hidden border-2 border-teal-500/30 shadow-2xl">
+                                <Chessboard
+                                    options={{
+                                        position: chessPosition,
+                                        onSquareClick,
+                                        onPieceDrop,
+                                        squareStyles: combinedSquareStyles,
+                                        darkSquareStyle: { backgroundColor: "#08947aff" },
+                                        boardOrientation,
+                                        lightSquareStyle: { backgroundColor: "#d1fae5" },
+                                    }}
+                                />
+                            </div>
+                            {viewingHistoryIndex !== null && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full blur-lg opacity-70" />
+                                        <div className="relative bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 text-gray-900 px-5 py-1.5 rounded-full font-bold text-xs shadow-xl border-2 border-white/30 animate-gradient">
+                                            📜 Történet megtekintése
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {gameData?.status === "waiting" && gameData.players?.white && gameData.players?.black && (
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl blur-2xl opacity-60" />
+                                        <div className="relative bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 text-gray-900 px-8 py-3 rounded-2xl font-bold text-lg shadow-2xl border-4 border-white/40 animate-pulse">
+                                            ⏳ WAITING
+                                            <div className="text-xs font-normal mt-1 opacity-80">Waiting for first move...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {gameData?.status === "waiting" && (!gameData.players?.white || !gameData.players?.black) && (
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-2xl opacity-60" />
+                                        <div className="relative bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 text-gray-900 px-8 py-3 rounded-2xl font-bold text-lg shadow-2xl border-4 border-white/40 animate-pulse">
+                                            👥 WAITING FOR PLAYERS
+                                            <div className="text-xs font-normal mt-1 opacity-80">
+                                                {!gameData.players?.white && !gameData.players?.black && "Waiting for both players..."}
+                                                {gameData.players?.white && !gameData.players?.black && "Waiting for Black player..."}
+                                                {!gameData.players?.white && gameData.players?.black && "Waiting for White player..."}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Alsó játékos */}
+                        <div className="w-full max-w-[470px] mx-auto relative backdrop-blur-xl bg-gray-900/30 rounded-xl p-3 border border-teal-500/20 transition-all duration-300">
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-500/5 to-cyan-500/5 pointer-events-none" />
+                            <div className="relative flex justify-start items-center gap-4 z-10">
+                                <PlayerInfo
+                                    color={isWhite ? "white" : "black"}
+                                    player={bottomPlayer ?? null}
+                                    position="bottom"
+                                    startingElo={bottomPlayerStartingElo}
+                                    currentElo={bottomPlayerCurrentElo}
+                                    eloChange={bottomPlayerEloChange}
+                                />
+                                <div className="ml-auto">
+                                    <ChessClock
+                                        initialTime={timeLeft[isWhite ? "white" : "black"]}
+                                        active={currentTurn === (isWhite ? "white" : "black") && gameData?.status !== "ended" && gameData?.status !== "waiting"}
+                                        onTimeExpired={() => handleTimeExpired(isWhite ? "white" : "black")}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Jobb oszlop: ViewHistory - Gombok - ChatBox */}
+                    <div className="flex flex-col lg:flex-1 gap-3 w-full lg:w-auto">
+                        {/* Lépéstörténet */}
+                        <div className="flex-1 min-h-0">
+                            <MoveHistory
+                                moveHistory={moveHistory}
+                                viewingHistoryIndex={viewingHistoryIndex}
+                                onViewMove={viewMove}
+                                onGoToLatest={goToLatestPosition}
+                            />
+                        </div>
+
+                        {/* Game action buttons */}
+                        {gameData?.status !== "ended" && (moveHistory.length <= 1 || moveHistory.length > 1) && (
+                            <div className="flex gap-3 justify-center items-center py-2">
+                                {moveHistory.length <= 1 && (
+                                    <button
+                                        onClick={handleAbort}
+                                        className="relative px-6 py-2.5 bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 hover:text-orange-200 font-semibold rounded-lg border border-orange-600/30 hover:border-orange-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
+                                    >
+                                        <span className="relative flex items-center gap-2">
+                                            ⛔ Megszakítás
+                                        </span>
+                                    </button>
+                                )}
+
+                                {moveHistory.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={handleOfferDraw}
+                                            className="relative px-6 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-emerald-200 font-semibold rounded-lg border border-emerald-600/30 hover:border-emerald-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
+                                        >
+                                            <span className="relative flex items-center gap-2">
+                                                🤝 Döntetlen
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            onClick={handleSurrender}
+                                            className="relative px-6 py-2.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-red-200 font-semibold rounded-lg border border-red-600/30 hover:border-red-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
+                                        >
+                                            <span className="relative flex items-center gap-2">
+                                                🏳️ Feladás
+                                            </span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Chat Box */}
+                        <div className="flex-1 min-h-0">
+                            {gameId && currentUser?.uid && (
+                                <ChatBox
+                                    gameId={gameId}
+                                    currentUserId={currentUser.uid}
+                                    currentUserName={
+                                        currentUser.displayName ||
+                                        currentUser.email?.split('@')[0] ||
+                                        (gameData?.players?.white?.uid === currentUser.uid
+                                            ? (gameData.players.white.displayName || gameData.players.white.email?.split('@')[0] || "Játékos")
+                                            : gameData?.players?.black?.uid === currentUser.uid
+                                            ? (gameData.players.black.displayName || gameData.players.black.email?.split('@')[0] || "Játékos")
+                                            : "Játékos")
+                                    }
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <style>{`
+                    @keyframes float {
+                        0%, 100% { transform: translateY(0px) rotate(0deg); }
+                        50% { transform: translateY(-20px) rotate(5deg); }
+                    }
+                    @keyframes gradient {
+                        0%, 100% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                    }
+                    .animate-float {
+                        animation: float 6s ease-in-out infinite;
+                    }
+                    .delay-1000 {
+                        animation-delay: 1s;
+                    }
+                    .delay-2000 {
+                        animation-delay: 2s;
+                    }
+                    .delay-3000 {
+                        animation-delay: 3s;
+                    }
+                    .animate-gradient {
+                        background-size: 200% 200%;
+                        animation: gradient 3s ease infinite;
+                    }
+                `}</style>
+            </div>
+
             <GameEndModal
                 isOpen={showEndModal}
                 winner={gameData?.winner || null}
                 players={gameData?.players || null}
-                winReason={winReason}
-                currentUser={currentUser}
+                winReason={gameData?.winReason || null}
                 startingElo={gameData?.startingElo}
                 finalElo={gameData?.finalElo}
-                eloChanges={eloChanges}
+                currentUser={currentUser}
                 onClose={() => setShowEndModal(false)}
                 onNewGame={handleNewGame}
                 onRematch={handleRematch}

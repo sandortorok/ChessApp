@@ -4,7 +4,7 @@ import type { Player, winReason } from "../types";
 interface GameEndModalProps {
     isOpen: boolean;
     winner: "white" | "black" | "draw" | null;
-    winReason?: winReason;
+    winReason: winReason | null;
     players: {
         white: Player | null;
         black: Player | null;
