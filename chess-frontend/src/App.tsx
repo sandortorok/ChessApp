@@ -7,7 +7,7 @@ import { LoginForm, RegisterForm } from '@/features/auth';
 import { ChessGame } from '@/features/game';
 import { LobbyPage } from '@/features/lobby';
 import { MyGamesPage } from '@/features/game-history';
-import { LeaderboardPage } from '@/features/player';
+import { LeaderboardPage } from '@/features/leaderboard';
 import { SettingsPage } from '@/features/settings';
 
 function App() {
