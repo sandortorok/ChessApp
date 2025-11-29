@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import './App.css';
-import ChessGame from './ChessGame';
+import ChessGame from './components/ChessGame';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/home';
 import LoginForm from './components/LoginForm';

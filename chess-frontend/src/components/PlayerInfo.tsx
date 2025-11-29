@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import PlayerProfileModal from "./components/PlayerProfileModal";
+import PlayerProfileModal from "./PlayerProfileModal";
 
 interface PlayerInfoProps {
   color: "white" | "black";

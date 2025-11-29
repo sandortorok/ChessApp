@@ -1,5 +1,4 @@
-import React from "react";
-import PlayerInfo from "../PlayerInfo";
+import PlayerInfo from "./PlayerInfo";
 import ChessClock from "./ChessClock";
 import type { Player } from "../types";
 
