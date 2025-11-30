@@ -1,13 +1,9 @@
-/**
- * Check if a player is a guest (uid starts with "guest_")
- */
+/** Guest players have UIDs starting with "guest_" */
 export function isGuest(player: any): boolean {
     return player?.uid?.startsWith("guest_");
 }
 
-/**
- * Format timestamp to relative time (e.g., "5m ago", "3h ago")
- */
+/** Formats timestamp as "5m ago", "3h ago", "2d ago" */
 export function formatTimeAgo(timestamp: number): string {
     const now = Date.now();
     const diff = now - timestamp;
@@ -22,9 +18,7 @@ export function formatTimeAgo(timestamp: number): string {
     return `${seconds}s ago`;
 }
 
-/**
- * Get player display name with fallbacks
- */
+/** Fallback chain: name → displayName → email → "Guest" → "Waiting" */
 export function getPlayerDisplayName(player: any): string {
     if (!player) return "Waiting";
     return (
@@ -35,9 +29,7 @@ export function getPlayerDisplayName(player: any): string {
     );
 }
 
-/**
- * Get player ELO rating
- */
+/** Priority: finalElo → startingElo → player.elo → 1200 */
 export function getPlayerElo(
     player: any,
     gameData?: any,
@@ -53,9 +45,7 @@ export function getPlayerElo(
     return player.elo || 1200;
 }
 
-/**
- * Calculate ELO change for a player
- */
+/** Returns null if game not ended or ELO data missing */
 export function getEloChange(
     gameData: any,
     playerColor: "white" | "black"
@@ -69,9 +59,6 @@ export function getEloChange(
     return gameData.finalElo[playerColor] - gameData.startingElo[playerColor];
 }
 
-/**
- * Get status badge color class
- */
 export function getStatusColor(status: string): string {
     switch (status) {
         case "waiting":
@@ -85,9 +72,6 @@ export function getStatusColor(status: string): string {
     }
 }
 
-/**
- * Get status badge label
- */
 export function getStatusLabel(status: string): string {
     switch (status) {
         case "waiting":
@@ -101,9 +85,6 @@ export function getStatusLabel(status: string): string {
     }
 }
 
-/**
- * Check if game is full (both players joined)
- */
 export function isGameFull(game: any): boolean {
     return !!(game.players?.white && game.players?.black);
 }

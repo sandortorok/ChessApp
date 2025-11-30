@@ -6,10 +6,7 @@ import type { GameSettings } from "@/features/lobby";
 import { playerService } from "@/features/player/services/playerService";
 import type { User } from "firebase/auth";
 
-/**
- * Hook that ensures a game exists in Firebase.
- * If the game doesn't exist, it creates a new one.
- */
+/** Creates game in Firebase if it doesn't exist, then joins current user */
 export function useGameInitializer(
     gameId: string | undefined,
     gameSettings: GameSettings | undefined,

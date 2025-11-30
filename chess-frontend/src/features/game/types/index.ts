@@ -3,6 +3,7 @@ import type { Player } from '@/features/player';
 // Re-export Player for convenience
 export type { Player };
 
+/** Chess square in algebraic notation (e.g., "e4", "a1") */
 export type Square =
   | "a1" | "a2" | "a3" | "a4" | "a5" | "a6" | "a7" | "a8"
   | "b1" | "b2" | "b3" | "b4" | "b5" | "b6" | "b7" | "b8"
@@ -21,19 +22,20 @@ export type winReason =
   | "insufficientMaterial"
   | "draw"
   | "resignation"
-  | "aggreement"
-  | "aborted";
+  | "aggreement" // TODO: Fix typo → "agreement"
+  | "aborted"; // No ELO changes
 
 export interface MoveHistoryType {
   from: string;
   to: string;
-  san: string;
+  san: string; // Standard Algebraic Notation (e.g., "Nf3", "exd5")
   fen: string;
   updatedAt: number;
   moveNumber: number;
   timeLeft: { white: number; black: number };
 }
 
+/** Game state synced via Firebase Realtime Database */
 export type Game = {
   fen: string;
   moves: MoveHistoryType[];
@@ -43,13 +45,13 @@ export type Game = {
   status: "waiting" | "ongoing" | "ended";
   winner: "white" | "black" | "draw" | null;
   winReason: winReason | null;
-  timeLeft: { white: number; black: number };
-  timeControl?: number;
-  increment?: number;
+  timeLeft: { white: number; black: number }; // milliseconds
+  timeControl?: number; // milliseconds
+  increment?: number; // milliseconds
   opponentType?: "human" | "ai";
   createdAt: number;
   updatedAt: number;
   startingElo?: { white: number; black: number };
   finalElo?: { white: number; black: number };
-  drawOfferedBy?: string | null;
+  drawOfferedBy?: string | null; // UID of player who offered draw
 };

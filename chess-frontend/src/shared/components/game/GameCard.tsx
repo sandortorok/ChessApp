@@ -2,7 +2,7 @@ import { PlayerSlot } from "./PlayerSlot";
 import { formatTimeAgo, getStatusColor, getStatusLabel, isGameFull } from "@/shared/utils/gameHelpers";
 
 export interface GameCardProps {
-    game: any;
+    game: any; // TODO: Replace with proper Game type
     currentUserId?: string;
     onPlayerClick?: (event: React.MouseEvent, player: any, game: any, playerColor: "white" | "black") => void;
     onCardClick?: (gameId: string) => void;

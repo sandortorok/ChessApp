@@ -4,6 +4,7 @@ import { auth } from "@/lib/firebase/config";
 import { getUserProfile } from "../services/userService";
 import type { UserProfile } from "../types/index";
 
+/** Syncs Firebase Auth state with Firestore user profile */
 export function useAuth() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);

@@ -13,7 +13,7 @@ interface PlayerInfoProps {
     losses?: number;
     draws?: number;
   } | null;
-  position?: "top" | "bottom";
+  position?: "top" | "bottom"; // Controls modal direction (upwards/downwards)
   startingElo?: number;
   currentElo?: number;
   eloChange?: number;

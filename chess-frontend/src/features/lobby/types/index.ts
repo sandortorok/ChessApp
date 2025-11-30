@@ -1,5 +1,5 @@
 export interface GameSettings {
-  timeControl: number; // percben
-  increment: number; // másodpercben
+  timeControl: number; // minutes
+  increment: number; // seconds
   opponentType: "human" | "ai";
 }

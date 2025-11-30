@@ -68,14 +68,7 @@ class LichessService {
     return this.apiToken.length > 0;
   }
 
-  /**
-   * Challenge the Lichess AI to a game
-   * @param level - AI difficulty level (1-8)
-   * @param color - Your color preference ('white', 'black', or 'random')
-   * @param clock - Optional time control in seconds (e.g., 300 for 5 minutes)
-   * @param increment - Optional increment in seconds
-   * @returns Promise with challenge information including game URL
-   */
+  /** Challenges Lichess AI (level 1-8) */
   async challengeAI(
     level: LichessAILevel = 4,
     color: Color = 'random',
@@ -122,13 +115,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Make a move in a game
-   * @param gameId - The game ID
-   * @param move - The move in UCI format (e.g., "e2e4")
-   * @param offeringDraw - Whether to offer a draw with this move
-   * @returns Promise with move result
-   */
+  /** Makes a move in UCI format (e.g., "e2e4") */
   async makeMove(
     gameId: string,
     move: string,
@@ -165,13 +152,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Stream game state updates in real-time
-   * @param gameId - The game ID
-   * @param onGameState - Callback for game state updates
-   * @param onGameFull - Callback for full game data (called once at start)
-   * @returns Function to close the stream
-   */
+  /** Streams real-time game state updates. Returns cleanup function. */
   streamGameState(
     gameId: string,
     onGameState: (state: LichessGameState) => void,
@@ -227,10 +208,6 @@ class LichessService {
     };
   }
 
-  /**
-   * Get current ongoing games
-   * @returns Promise with array of ongoing games
-   */
   async getOngoingGames(): Promise<any[]> {
     if (!this.hasToken()) {
       throw new Error('Lichess API token not set. Use setToken() first.');
@@ -255,11 +232,6 @@ class LichessService {
     }
   }
 
-  /**
-   * Get game data (moves, players, etc.)
-   * @param gameId - The game ID
-   * @returns Promise with game data
-   */
   async getGame(gameId: string): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/game/${gameId}`, {
@@ -279,10 +251,6 @@ class LichessService {
     }
   }
 
-  /**
-   * Resign from a game
-   * @param gameId - The game ID
-   */
   async resign(gameId: string): Promise<{ ok: boolean }> {
     if (!this.hasToken()) {
       throw new Error('Lichess API token not set. Use setToken() first.');
@@ -307,10 +275,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Abort a game (only works in first few moves)
-   * @param gameId - The game ID
-   */
+  /** Aborts game (only works in first few moves) */
   async abort(gameId: string): Promise<{ ok: boolean }> {
     if (!this.hasToken()) {
       throw new Error('Lichess API token not set. Use setToken() first.');
@@ -335,11 +300,6 @@ class LichessService {
     }
   }
 
-  /**
-   * Accept or decline a draw offer
-   * @param gameId - The game ID
-   * @param accept - True to accept, false to decline
-   */
   async handleDrawOffer(gameId: string, accept: boolean): Promise<{ ok: boolean }> {
     if (!this.hasToken()) {
       throw new Error('Lichess API token not set. Use setToken() first.');
@@ -369,12 +329,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Get cloud evaluation for a position
-   * @param fen - FEN notation of the position
-   * @param multiPv - Number of principal variations (1-5)
-   * @returns Promise with evaluation data
-   */
+  /** Gets cloud evaluation for position (multiPv: 1-5 variations) */
   async getCloudEvaluation(fen: string, multiPv: number = 1): Promise<any> {
     try {
       const params = new URLSearchParams({
@@ -402,11 +357,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Get the best move from Lichess cloud analysis
-   * @param fen - FEN notation of the position
-   * @returns Promise with best move in UCI format or null if not available
-   */
+  /** Returns best move in UCI format from cloud analysis, or null */
   async getBestMove(fen: string): Promise<string | null> {
     try {
       const evaluation = await this.getCloudEvaluation(fen, 1);
@@ -427,12 +378,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Convert UCI move format to SAN (requires chess.js instance)
-   * @param uci - Move in UCI format (e.g., "e2e4")
-   * @param chess - chess.js instance
-   * @returns SAN notation (e.g., "e4") or original UCI if conversion fails
-   */
+  /** Converts UCI ("e2e4") to SAN ("e4") using chess.js instance */
   uciToSan(uci: string, chess: any): string {
     try {
       const from = uci.substring(0, 2);
@@ -450,11 +396,7 @@ class LichessService {
     }
   }
 
-  /**
-   * Parse moves string into array of UCI moves
-   * @param moves - Space-separated UCI moves (e.g., "e2e4 e7e5 g1f3")
-   * @returns Array of UCI moves
-   */
+  /** Parses space-separated UCI moves ("e2e4 e7e5") into array */
   parseMoves(moves: string): string[] {
     if (!moves || moves.trim() === '') {
       return [];
@@ -462,9 +404,6 @@ class LichessService {
     return moves.trim().split(' ');
   }
 
-  /**
-   * Get difficulty description for AI level
-   */
   getLevelDescription(level: LichessAILevel): string {
     const descriptions: Record<LichessAILevel, string> = {
       1: 'Nagyon könnyű',
@@ -479,9 +418,6 @@ class LichessService {
     return descriptions[level];
   }
 
-  /**
-   * Cleanup all connections
-   */
   cleanup(): void {
     if (this.eventSource) {
       this.eventSource.close();

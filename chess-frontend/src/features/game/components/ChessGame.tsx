@@ -20,11 +20,12 @@ import { playerService } from "@/features/player/services/playerService";
 import { useGameInitializer } from "../hooks/useGameInitializer";
 import { getGameLayout, getPlayerEloData } from "../utils/gameLayoutHelpers";
 
+/** Main chess game component handling game logic, UI, and Firebase synchronization */
 export default function ChessGame() {
     const { gameId } = useParams<{ gameId: string }>();
     const location = useLocation();
     const gameSettings = (location.state as { gameSettings: GameSettings })?.gameSettings;
-    
+
     const chessGameRef = useRef(new Chess());
     const chessGame = chessGameRef.current;
 
@@ -35,12 +36,17 @@ export default function ChessGame() {
     const [moveHistory, setMoveHistory] = useState<MoveHistoryType[]>([]);
     const [gameData, setGameData] = useState<Game | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+    /** When not null, user is viewing a historical position instead of live game */
     const [viewingHistoryIndex, setViewingHistoryIndex] = useState<number | null>(null);
+
     const currentTurn = chessGame.turn() === "w" ? "white" : "black";
     const [timeLeft, setTimeLeft] = useState<{ white: number; black: number }>({
-        white: 5 * 60 * 1000, // Alapértelmezett, amíg be nem töltődik
+        white: 5 * 60 * 1000,
         black: 5 * 60 * 1000,
     });
+
+    /** Tracks previous status to detect when game ends (for showing modal once) */
     const [prevStatus, setPrevStatus] = useState(gameData?.status);
 
     const [showEndModal, setShowEndModal] = useState(false);
@@ -54,7 +60,7 @@ export default function ChessGame() {
         return () => unsub();
     }, []);
 
-    //Create game if not exists
+    // Create game if not exists
     useGameInitializer(gameId, gameSettings, currentUser);
 
     // Join game if not already joined
@@ -74,41 +80,42 @@ export default function ChessGame() {
 
         return () => unsubscribe();
     }, [gameId, currentUser]);
+    /** Syncs local state with Firebase updates. Calculates elapsed time for accurate clock. */
     function handleGameUpdate(snap: DataSnapshot) {
         const game: Game = snap.val();
         if (!game) return;
 
-        // Pozíció szinkronizálás
+        // Position synchronization
         setViewingHistoryIndex(null);
         setChessPosition(game.fen);
-        // Utolsó lépés kiemelése
+        // Highlight last move
         setLastMoveSquares(
             game.lastMove ? { from: game.lastMove.from, to: game.lastMove.to } : null
         );
         chessGame.load(game.fen);
-        
-        
-        // Idő számítása
+
+
+        // Calculate elapsed time
         if (game.timeLeft) {
             const elapsed = game.status === "ongoing" ? Date.now() - game.updatedAt : 0;
             const currentTurnSide = chessGame.turn() === "w" ? "white" : "black";
-            
+
             setTimeLeft({
                 ...game.timeLeft,
                 [currentTurnSide]: Math.max(0, game.timeLeft[currentTurnSide] - elapsed),
             });
         }
-        // Játék adatok és lépéstörténet mentése
+        // Save game data and move history
         setGameData(game);
         setMoveHistory(game.moves || []);
-        
+
     }
 
-    // Játék vége modal megjelenítése
+    // Show game end modal
     useEffect(() => {
         if (!gameData) return;
 
-        // Játék vége modal megjelenítése mindenkinek (játékosoknak és nézőknek is)
+        // Show end modal to everyone (players and spectators)
         if (gameData.status === "ended" && !showEndModal && prevStatus !== "ended") {
             setShowEndModal(true);
         }
@@ -116,73 +123,74 @@ export default function ChessGame() {
 
     }, [gameData?.status, showEndModal, prevStatus]);
 
-    // Döntetlen ajánlat figyelése
+    // Listen for draw offers
     useEffect(() => {
         if (!gameData || !currentUser) return;
 
-        // Ha valaki felajánlotta a döntetlent ÉS nem én voltam az
+        // If someone offered a draw AND it wasn't me
         if (gameData.drawOfferedBy && gameData.drawOfferedBy !== currentUser.uid) {
             setDrawOfferedBy(gameData.drawOfferedBy);
             setShowDrawOfferModal(true);
         } else if (!gameData.drawOfferedBy) {
-            // Ha nincs ajánlat, bezárjuk a modalt
+            // If no offer, close the modal
             setShowDrawOfferModal(false);
             setDrawOfferedBy(null);
         }
     }, [gameData?.drawOfferedBy, currentUser]);
 
+    /** @todo Implement new game flow */
     function handleNewGame() {
-        console.log("Új játék indítása...");
-        // TODO: Implementálni később
+        console.log("Starting new game...");
     }
 
+    /** @todo Implement rematch logic */
     function handleRematch() {
-        console.log("Visszavágó indítása...");
-        // TODO: Implementálni később
+        console.log("Starting rematch...");
     }
+
     function isMyPiece(square: Square) {
         const piece = chessGame.get(square);
         if (!piece) return false;
         if (!currentUser || !gameData?.players) return false;
-        
-        // Service-t használjuk a játékos oldalának meghatározására
+
+        // Use service to determine player side
         const mySide = playerService.getPlayerSide(currentUser, gameData);
         if (!mySide) return false;
-        
+
         const mySideColor = mySide === "white" ? "w" : "b";
         return piece.color === mySideColor;
     }
 
     function getRemainingTime(side: "white" | "black") {
         if (!gameData) return 0;
-        
-        // Service-t használjuk az idő kiszámítására
         const currentTurnSide = chessGame.turn() === "w" ? "white" : "black";
         return playerService.getRemainingTime(side, gameData, currentTurnSide);
     }
 
+    /** Validates if current user can make a move (checks turn, time, players joined, game status) */
     function canMove() {
         if (!currentUser || !gameData?.players) return false;
 
-        // Ellenőrizd, hogy mindkét játékos csatlakozott-e
+        // Check if both players joined
         if (!gameData.players.white || !gameData.players.black) return false;
 
-        // Service-t használjuk a játékos oldalának meghatározására
+        // Use service to determine player side
         const mySide = playerService.getPlayerSide(currentUser, gameData);
 
         if (!mySide) return false;
 
-        // Ellenőrizd az időt valós időben
+        // Check time in real-time
         if (getRemainingTime(mySide) <= 0) return false;
 
-        // Ellenőrizd, hogy a játék folyamatban van
+        // Check if game is ongoing
         if (gameData?.status === "ended") return false;
 
-        // Ellenőrizd, hogy a soron következő játékos vagy-e
+        // Check if it's my turn
         if ((chessGame.turn() === "w" ? "white" : "black") !== mySide) return false;
 
         return true;
     }
+    /** Highlights legal moves for a piece (different styles for captures vs normal moves) */
     function getMoveOptions(square: Square) {
         const moves = chessGame.moves({ square, verbose: true });
         if (!moves || moves.length === 0) {
@@ -205,9 +213,10 @@ export default function ChessGame() {
         return true;
     }
 
+    /** Handles click-based move input (select piece → click destination) */
     function onSquareClick({ square, piece }: SquareHandlerArgs) {
         if (!canMove()) return;
-        // Ha történetet nézünk, ne engedjük a lépést
+        // Don't allow moves while viewing history
         if (viewingHistoryIndex !== null) return;
 
         if (piece && !isMyPiece(square as Square)) return;
@@ -252,14 +261,14 @@ export default function ChessGame() {
 
     function onPieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs) {
         if (!canMove()) return false;
-        // Ha történetet nézünk, ne engedjük a lépést
+        // Don't allow moves while viewing history
         if (viewingHistoryIndex !== null) return false;
 
         if (!isMyPiece(sourceSquare as Square)) return false;
         if (!targetSquare) return false;
 
         try {
-            if (!gameService.isLegalMove(chessGame, sourceSquare, targetSquare)) return false;            
+            if (!gameService.isLegalMove(chessGame, sourceSquare, targetSquare)) return false;
             const move = gameService.move(chessGame, sourceSquare, targetSquare);
             if (!move) return false;
             gameService.updateGameInDb(gameId!, gameData!, chessGame, chessGame.fen(), move);
@@ -273,7 +282,7 @@ export default function ChessGame() {
         }
     }
 
-    // Történet navigáció
+    /** Navigates to a historical position for review (doesn't affect actual game) */
     function viewMove(index: number) {
         if (index < 0 || index >= moveHistory.length) return;
 
@@ -302,6 +311,7 @@ export default function ChessGame() {
         setOptionSquares({});
         setMoveFrom("");
     }
+
     async function handleOfferDraw() {
         if (!canMove() || !gameId || !gameData || gameData.status === "ended" || !currentUser) return;
         console.log("Döntetlen ajánlás...");
@@ -323,9 +333,9 @@ export default function ChessGame() {
     async function handleAcceptDraw() {
         if (!gameId || !gameData) return;
         console.log("Döntetlen elfogadása...");
-        
+
         const gameRef = ref(db, `games/${gameId}`);
-        
+
         try {
             await update(gameRef, {
                 status: "ended",
@@ -333,12 +343,12 @@ export default function ChessGame() {
                 winReason: "aggreement",
                 drawOfferedBy: null, // Töröljük az ajánlatot
             });
-            
+
             console.log("Draw accepted!");
-            
+
             // Frissítjük a Firestore-t
             await gameService.updateFirestoreOnGameEnd(gameId, gameData, "draw");
-            
+
             setShowDrawOfferModal(false);
             setShowEndModal(true);
         } catch (err) {
@@ -365,16 +375,17 @@ export default function ChessGame() {
         }
     }
 
+    /** Aborts game without ELO impact (only allowed when ≤1 moves played) */
     async function handleAbort() {
         if (!gameId || !gameData || gameData.status === "ended" || !currentUser) return;
-        
+
         // Csak 0-1 lépés esetén lehet megszakítani
         if (moveHistory.length > 1) return;
-        
+
         console.log("Játék megszakítása...");
-        
+
         const gameRef = ref(db, `games/${gameId}`);
-        
+
         try {
             // Játék befejezése döntetlenként, DE ELO változás nélkül
             const now = Date.now();
@@ -384,9 +395,9 @@ export default function ChessGame() {
                 winReason: "aborted",
                 updatedAt: now,
             });
-            
+
             console.log("Game aborted without ELO changes");
-            
+
             // NEM frissítjük a Firestore-t (nincs ELO változás)
             setShowEndModal(true);
         } catch (err) {
@@ -410,38 +421,39 @@ export default function ChessGame() {
     
     async function confirmSurrender() {
         if (!gameId || !gameData || !currentUser) return;
-        
+
         // Modal bezárása azonnal
         setShowSurrenderConfirm(false);
-        
+
         console.log("Megadás...");
-        
+
         const gameRef = ref(db, `games/${gameId}`);
-        
+
         // Service-t használjuk a játékos oldalának meghatározására
         const mySide = playerService.getPlayerSide(currentUser, gameData);
         if (!mySide) return;
-        
+
         const winner = mySide === "white" ? "black" : "white";
-        
+
         try {
             await update(gameRef, {
                 status: "ended",
                 winner,
                 winReason: "resignation",
             });
-            
+
             console.log(`${mySide} surrendered, ${winner} wins!`);
-            
+
             // Frissítjük a Firestore-t
             await gameService.updateFirestoreOnGameEnd(gameId, gameData, winner);
-            
+
             setShowEndModal(true);
         } catch (err) {
             console.error("Error updating game on surrender:", err);
         }
     }
-    // Callback amikor lejár valamelyik játékos ideje
+
+    /** Called by ChessClock when time expires */
     async function handleTimeExpired(side: "white" | "black") {
         if (!gameId || !gameData || gameData.status === "ended") return;
 

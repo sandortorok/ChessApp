@@ -1,3 +1,4 @@
+/** User profile stored in Firestore (separate from Realtime DB game data) */
 export interface UserProfile {
   uid: string;
   email: string | null;

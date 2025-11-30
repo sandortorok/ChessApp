@@ -86,13 +86,7 @@ export async function incrementDraws(uid: string): Promise<void> {
   });
 }
 
-/**
- * Kiszámítja az új ELO értéket a játék eredménye alapján
- * @param playerElo - A játékos jelenlegi ELO-ja
- * @param opponentElo - Az ellenfél ELO-ja
- * @param score - 1 = győzelem, 0.5 = döntetlen, 0 = vereség
- * @param kFactor - K faktor (általában 32)
- */
+/** Calculates new ELO rating. Score: 1 = win, 0.5 = draw, 0 = loss */
 export function calculateNewElo(
   playerElo: number,
   opponentElo: number,
