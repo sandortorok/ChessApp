@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 const navigation = [
   { name: "Home", href: "/" },
-  { name: "Profile", href: "/profile" },
+  { name: "Settings", href: "/settings" },
   { name: "Lobbies", href: "/lobby" },
   { name: "Game History", href: "/game-history" },
   { name: "Leaderboard", href: "/leaderboard" },
@@ -118,7 +118,7 @@ export default function Header() {
           {user ? (
             <div className="space-y-3">
               <a
-                href="/profile"
+                href="/settings"
                 className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 border border-emerald-600/20 hover:bg-slate-700/70 hover:border-emerald-600/40 transition-all duration-200 cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg overflow-hidden">
@@ -235,7 +235,7 @@ export default function Header() {
               <div className="py-6 space-y-4">
                 {user && (
                   <a
-                    href="/profile"
+                    href="/settings"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-emerald-600/20 hover:bg-slate-800/70 hover:border-emerald-600/40 transition-all duration-200 cursor-pointer"
                   >
