@@ -32,7 +32,7 @@ export interface MoveHistoryType {
   fen: string;
   updatedAt: number;
   moveNumber: number;
-  timeLeft: { white: number; black: number };
+  timeLeft: TimeLeft;
 }
 
 /** Game state synced via Firebase Realtime Database */
@@ -40,18 +40,29 @@ export type Game = {
   fen: string;
   moves: MoveHistoryType[];
   lastMove: { from: Square; to: Square; san: string } | null;
-  players: { white: Player; black: Player } | null;
-  turn: "white" | "black";
-  status: "waiting" | "ongoing" | "ended";
-  winner: "white" | "black" | "draw" | null;
+  players: Players | null;
+  turn: PlayerColor;
+  status: Status;
+  winner: Winner;
   winReason: winReason | null;
-  timeLeft: { white: number; black: number }; // milliseconds
+  timeLeft: TimeLeft; // milliseconds
   timeControl?: number; // milliseconds
   increment?: number; // milliseconds
   opponentType?: "human" | "ai";
   createdAt: number;
   updatedAt: number;
-  startingElo?: { white: number; black: number };
-  finalElo?: { white: number; black: number };
+  startingElo?: PlayerElos;
+  finalElo?: PlayerElos;
   drawOfferedBy?: string | null; // UID of player who offered draw
 };
+export type GameEndInfo = {
+  status: Status;
+  winner: Winner | null;
+  winReasonValue: winReason | null;
+};
+export type TimeLeft = { white: number; black: number };
+export type PlayerElos = { white: number; black: number };
+export type Winner = "white" | "black" | "draw" | null;
+export type PlayerColor = "white" | "black";
+export type Players = { white: Player; black: Player };
+export type Status = "waiting" | "ongoing" | "ended";

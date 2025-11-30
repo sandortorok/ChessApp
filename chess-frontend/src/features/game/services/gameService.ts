@@ -3,41 +3,13 @@
  * Handles general game logic and Firebase operations
  */
 
-import { ref, set, update, get } from "firebase/database";
+import { ref, update, get } from "firebase/database";
 import { doc, getDoc, updateDoc, increment, type DocumentData } from "firebase/firestore";
 import { db, firestore } from "@/lib/firebase/config";
 import type { Chess, Move } from "chess.js";
-import type { Game, MoveHistoryType, winReason } from "../types/index";
-import type { GameSettings } from "@/features/lobby";
+import type { Game, GameEndInfo, MoveHistoryType, PlayerColor, Status, TimeLeft, Winner, winReason } from "../types/index";
 
 export class GameService {
-  /**
-   * Create a new game in Firebase
-   */
-  async createNewGame(gameId: string, settings: GameSettings): Promise<void> {
-    const timeControl = settings?.timeControl || 5; // minutes
-    const increment = settings?.increment || 0; // seconds
-    const opponentType = settings?.opponentType || "human";
-    const initialTime = timeControl * 60 * 1000; // Convert to milliseconds
-    const initialGame = {
-      moves: [],
-      fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-      lastMove: null,
-      players: { white: null, black: null },
-      turn: "white",
-      status: "waiting",
-      timeLeft: { white: initialTime, black: initialTime },
-      timeControl: timeControl,
-      increment: increment,
-      opponentType: opponentType,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    const gameRef = ref(db, `games/${gameId}`);
-    await set(gameRef, initialGame);
-  }
-
   isLegalMove(chessGame: Chess, sourceSquare: string, targetSquare: string): boolean {
     const legalMoves = chessGame.moves({ square: sourceSquare as any, verbose: true });
     return legalMoves.some(move => move.to === targetSquare);
@@ -54,7 +26,7 @@ export class GameService {
     const now = Date.now();
     const lastUpdate = gameData.updatedAt || now;
     const elapsed = gameData.status !== "waiting" ? (now - lastUpdate) : 0;
-    const newTimeLeft = { ...gameData.timeLeft };
+    const newTimeLeft: TimeLeft = { ...gameData.timeLeft };
     const reverseTurn = gameData.turn === "white" ? "black" : "white";
     // Time management
     if (gameData.status !== "waiting") {
@@ -64,32 +36,21 @@ export class GameService {
     }
     return newTimeLeft;
   }
-  async updateGameInDb(
-    gameId: string,
-    gameData: Game,
-    chessGame: Chess,
-    fen: string,
-    move: Move
-  ): Promise<void> {
-    const gameRef = ref(db, `games/${gameId}`);
 
-    let winReasonValue: winReason | null = null;
 
-    const newTimeLeft = this.calculateTimeLeft(gameData);
-
-    let status = "ongoing";
+  checkGameEndConditions(chessGame: Chess, gameData: Game, timeLeft: TimeLeft):GameEndInfo {
+    let status: Status = "ongoing";
     let winner: "white" | "black" | "draw" | null = null;
-    //Mivel már léptünk, az előző játékos volt a lépő
-    const playerMoved = gameData.turn === "white" ? "black" : "white";
-    if (newTimeLeft[playerMoved] === 0 && gameData.status !== "waiting") {
+    let winReasonValue: winReason | null = null;
+    const playerMoved = gameData.turn === "white" ? "black" : "white"; // Checking for the player who just moved
+    if (timeLeft[playerMoved] === 0 && gameData.status !== "waiting") {
       status = "ended";
       winner = playerMoved;
       winReasonValue = "timeout";
     }
-
     if (chessGame.isCheckmate()) {
       status = "ended";
-      winner = playerMoved;
+      winner = gameData.turn === "white" ? "black" : "white";
       winReasonValue = "checkmate";
     } else if (this.getDrawReason(chessGame)) {
       status = "ended";
@@ -97,33 +58,71 @@ export class GameService {
       winReasonValue = this.getDrawReason(chessGame);
     }
 
+    return { status, winner, winReasonValue };
+  }
+
+
+  private buildUpdatePayload(
+    fen: string,
+    move: Move,
+    gameEndInfo: { status: Status; winner: Winner | null; winReasonValue: winReason | null },
+    newTimeLeft: TimeLeft,
+    newMove: MoveHistoryType,
+    currentMoves: MoveHistoryType[]
+  ): Partial<Game> {
+    return {
+      fen,
+      lastMove: {
+        from: move.from,
+        to: move.to,
+        san: move.san,
+      },
+      updatedAt: Date.now(),
+      status: gameEndInfo.status,
+      winner: gameEndInfo.winner,
+      moves: [...currentMoves, newMove],
+      timeLeft: newTimeLeft,
+      winReason: gameEndInfo.winReasonValue,
+    };
+  }
+  private createNewMoveHistoryElement(
+    gameData: Game, move: Move, fen: string, timeLeft: TimeLeft
+  ): MoveHistoryType {
     const currentMoves = gameData?.moves || [];
     const moveNumber = Math.floor(currentMoves.length / 2) + 1;
 
-    const newMove: MoveHistoryType = {
+    return {
       from: move.from,
       to: move.to,
       san: move.san,
       fen,
       updatedAt: Date.now(),
-      moveNumber,
-      timeLeft: newTimeLeft,
+      moveNumber: moveNumber,
+      timeLeft,
     };
+  }
+  async updateGameInDb(
+    gameId: string,
+    gameData: Game,
+    chessGame: Chess,
+    newFen: string,
+    move: Move
+  ): Promise<void> {
+    const newTimeLeft = this.calculateTimeLeft(gameData);
+    const gameEndInfo = this.checkGameEndConditions(chessGame, gameData, newTimeLeft);
+    const newMove = this.createNewMoveHistoryElement(gameData, move, newFen, newTimeLeft);
+    const currentMoves = gameData?.moves || [];
+    const updateData = this.buildUpdatePayload(newFen, move, gameEndInfo, newTimeLeft, newMove, currentMoves);
 
-    await update(gameRef, {
-      fen,
-      lastMove: { from: move.from, to: move.to, san: move.san },
-      updatedAt: Date.now(),
-      status,
-      winner,
-      moves: [...currentMoves, newMove],
-      timeLeft: newTimeLeft,
-      winReason: winReasonValue,
-    });
+    try {
+      await update(ref(db, `games/${gameId}`), updateData);
 
-    // Update Firestore if game ended
-    if (status === "ended" && winner) {
-      await this.updateFirestoreOnGameEnd(gameId, gameData, winner);
+      if (gameEndInfo.status === "ended" && gameEndInfo.winner) {
+        await this.updateFirestoreOnGameEnd(gameId, gameData, gameEndInfo.winner);
+      }
+    } catch (error) {
+      console.error(`Failed to update game ${gameId}:`, error);
+      throw error;
     }
   }
 
@@ -141,26 +140,28 @@ export class GameService {
   /**
    * Calculate ELO change
    */
-  // Ha döntetlen van akkor ugyanolyan sorrendbe kapjuk vissza az értékeket mint ahogy beadtuk
-  // szóval ha a winner a fehér az inputban akkor a visszatérési értékben is először a fehér változó lesz
-  calculateEloChange(
-    winnerElo: number,
-    loserElo: number,
-    isDraw: boolean = false
-  ): { winnerChange: number; loserChange: number } {
+  calculateEloChange(whiteElo: number, blackElo: number, winner: Winner): { whiteChange: number; blackChange: number } {
     const K = 32;
-    const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
-    const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
+    const expectedWhite = 1 / (1 + Math.pow(10, (blackElo - whiteElo) / 400));
+    const expectedBlack = 1 / (1 + Math.pow(10, (whiteElo - blackElo) / 400));
 
-    if (isDraw) {
-      const winnerChange = Math.round(K * (0.5 - expectedWinner));
-      const loserChange = Math.round(K * (0.5 - expectedLoser));
-      return { winnerChange, loserChange };
+    if (winner === "draw") {
+      const whiteChange = Math.round(K * (0.5 - expectedWhite));
+      const blackChange = Math.round(K * (0.5 - expectedBlack));
+      return { whiteChange, blackChange };
     }
 
-    const winnerChange = Math.round(K * (1 - expectedWinner));
-    const loserChange = Math.round(K * (0 - expectedLoser));
-    return { winnerChange, loserChange };
+    if (winner === "white") {
+      const whiteChange = Math.round(K * (1 - expectedWhite));
+      const blackChange = Math.round(K * (0 - expectedBlack));
+      return { whiteChange, blackChange };
+    }
+
+    // winner === "black"
+    const whiteChange = Math.round(K * (0 - expectedWhite));
+    const blackChange = Math.round(K * (1 - expectedBlack));
+    console.log({ whiteChange, blackChange });
+    return { whiteChange, blackChange };
   }
   async getPlayerData(uid: string): Promise<DocumentData | null> {
     const playerRef = doc(firestore, "users", uid);
@@ -193,34 +194,29 @@ export class GameService {
   /**
    * Update Firestore on game end
    */
-  async updateFirestoreOnGameEnd(gameId: string,gameData: Game,winner: "white" | "black" | "draw" | null
-  ): Promise<void> {
-    if (!winner || !gameData?.players?.white?.uid || !gameData?.players?.black?.uid) return;
+  async updateFirestoreOnGameEnd(gameId: string, gameData: Game, winner: Winner): Promise<void> {
+    const whiteUid = gameData?.players?.white?.uid;
+    const blackUid = gameData?.players?.black?.uid;
+    if (!winner || !whiteUid || !blackUid) return;
 
     try {
-      const whiteData = await this.getPlayerData(gameData.players.white.uid);
-      const blackData = await this.getPlayerData(gameData.players.black.uid);
+      const [whiteData, blackData] = await Promise.all([
+        this.getPlayerData(whiteUid),
+        this.getPlayerData(blackUid),
+      ]);
       if (!whiteData || !blackData) return;
-      const blackWin = winner === "black";
-      const isDraw = winner === "draw";
-      const whiteWin = winner === "white";
-      const winnerData = blackWin ? blackData : whiteData;
-      const loserData = blackWin ? whiteData : blackData;
-      const { winnerChange, loserChange } = this.calculateEloChange(winnerData.elo, loserData.elo, winner === "draw");
-      await this.updateStatsOnGameEnd(
-        gameData.players.white.uid, 
-        whiteWin,
-        isDraw,
-        blackWin ? loserChange : winnerChange);
-      await this.updateStatsOnGameEnd(
-        gameData.players.black.uid, 
-        blackWin,
-        isDraw,
-        blackWin ? winnerChange : loserChange);
+
+      const { whiteChange, blackChange } = this.calculateEloChange(whiteData.elo, blackData.elo, winner);
+
+
+      await Promise.all([
+        this.updateStatsOnGameEnd(whiteUid, winner === "white", winner === "draw", whiteChange),
+        this.updateStatsOnGameEnd(blackUid, winner === "black", winner === "draw", blackChange),
+      ]);
 
       const finalElo = {
-        white: blackWin ? (whiteData.elo + loserChange) : (whiteData.elo + winnerChange),
-        black: blackWin ? (blackData.elo + winnerChange) : (blackData.elo + loserChange)
+        white: whiteData.elo + whiteChange,
+        black: blackData.elo + blackChange
       }
       const gameRef = ref(db, `games/${gameId}`);
       await update(gameRef, { finalElo });
@@ -308,7 +304,7 @@ export class GameService {
   async surrenderGame(
     gameId: string,
     gameData: Game,
-    surrenderingSide: "white" | "black"
+    surrenderingSide: PlayerColor
   ): Promise<void> {
     const gameRef = ref(db, `games/${gameId}`);
     const winner = surrenderingSide === "white" ? "black" : "white";
@@ -328,7 +324,7 @@ export class GameService {
   async handleTimeout(
     gameId: string,
     gameData: Game,
-    timeoutSide: "white" | "black"
+    timeoutSide: PlayerColor
   ): Promise<void> {
     const gameRef = ref(db, `games/${gameId}`);
     const winner = timeoutSide === "white" ? "black" : "white";
