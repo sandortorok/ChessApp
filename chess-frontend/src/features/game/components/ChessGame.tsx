@@ -555,7 +555,7 @@ export default function ChessGame() {
 
                     {/* Jobb oszlop: ViewHistory - Gombok - ChatBox */}
                     <div className="flex flex-col lg:flex-1 gap-3 w-full lg:w-auto">
-                        {/* L├⌐p├⌐st├╢rt├⌐net */}
+                        {/* Lépéstörténet */}
                         <div className="flex-1 min-h-0">
                             <MoveHistory
                                 moveHistory={moveHistory}
