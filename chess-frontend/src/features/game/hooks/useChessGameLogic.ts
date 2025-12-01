@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Chess } from 'chess.js';
 import type { User } from 'firebase/auth';
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from 'react-chessboard';
 import type { Square, Game } from '../types';
 import { gameMoveService } from '../services/gameMoveService';
-import { playerService } from '@/features/player/services/playerService';
+import { useChessPieceSelection } from './useChessPieceSelection';
+import { useChessMoveValidation } from './useChessMoveValidation';
 
 /**
  * Hook to manage chess game logic and board interactions
@@ -23,81 +24,18 @@ export function useChessGameLogic(
     index?: number | null
   ) => void
 ) {
-  const [moveFrom, setMoveFrom] = useState<'' | Square>('');
-  const [optionSquares, setOptionSquares] = useState<
-    Record<string, React.CSSProperties>
-  >({});
+  const {
+    moveFrom,
+    setMoveFrom,
+    optionSquares,
+    getMoveOptions,
+    clearSelection,
+  } = useChessPieceSelection(chessGame);
 
-  /**
-   * Clear move selection and highlights
-   */
-  const clearSelection = useCallback(() => {
-    setMoveFrom('');
-    setOptionSquares({});
-  }, []);
-
-  /**
-   * Check if a square contains current user's piece
-   */
-  const isMyPiece = useCallback(
-    (square: Square): boolean => {
-      const piece = chessGame.get(square);
-      if (!piece) return false;
-      if (!currentUser || !gameData?.players) return false;
-
-      const mySide = playerService.getPlayerSide(currentUser, gameData.players);
-      if (!mySide) return false;
-
-      const mySideColor = mySide === 'white' ? 'w' : 'b';
-      return piece.color === mySideColor;
-    },
-    [chessGame, currentUser, gameData]
-  );
-
-  /**
-   * Validate if current user can make a move
-   */
-  const canMove = useCallback((): boolean => {
-    if (!currentUser || !gameData?.players || gameData?.status === 'ended')
-      return false;
-    if (!gameData.players.white || !gameData.players.black) return false;
-
-    const mySide = playerService.getPlayerSide(currentUser, gameData.players);
-    if (!mySide) return false;
-
-    if ((chessGame.turn() === 'w' ? 'white' : 'black') !== mySide) return false;
-    if (playerService.getRemainingTime(mySide, gameData) <= 0) return false;
-
-    return true;
-  }, [chessGame, currentUser, gameData]);
-
-  /**
-   * Get and highlight legal moves for a piece
-   */
-  const getMoveOptions = useCallback(
-    (square: Square): boolean => {
-      const moves = chessGame.moves({ square, verbose: true });
-      if (!moves || moves.length === 0) {
-        setOptionSquares({});
-        return false;
-      }
-
-      const newSquares: Record<string, React.CSSProperties> = {};
-      for (const m of moves) {
-        newSquares[m.to] = {
-          background:
-            chessGame.get(m.to) &&
-            chessGame.get(m.to)?.color !== chessGame.get(square)?.color
-              ? 'radial-gradient(circle, rgba(0, 0, 0, 0.1) 85%, transparent 85%)'
-              : 'radial-gradient(circle, rgba(0, 0, 0, 0.1) 25%, transparent 25%)',
-          borderRadius: '50%',
-        };
-      }
-      newSquares[square] = { background: 'rgba(255, 255, 0, 0.4)' };
-      setOptionSquares(newSquares);
-      return true;
-    },
-    [chessGame]
+  const { isMyPiece, canMove } = useChessMoveValidation(
+    chessGame,
+    currentUser,
+    gameData
   );
 
   /**

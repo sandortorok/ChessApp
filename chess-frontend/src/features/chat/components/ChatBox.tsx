@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ref, push, onValue, off } from 'firebase/database';
 import { db } from '@/lib/firebase/config';
+import { useObservable } from '@/shared';
 import { gameStateService } from '@/features/game';
 import { useAuth } from '@/features/auth';
 
@@ -19,8 +20,7 @@ export default function ChatBox() {
   const currentUserName =
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Guest';
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  let gameId: string | null = null;
-  gameStateService.gameId$.subscribe((id) => (gameId = id));
+  const gameId = useObservable(gameStateService.gameId$, null);
   // Üzenetek betöltése
   useEffect(() => {
     if (!gameId) return;

@@ -8,6 +8,16 @@ import { db } from '@/lib/firebase/config';
 import type { Game, PlayerColor, TimeLeft } from '../types/index';
 
 export class GameTimerService {
+  private static instance: GameTimerService | null = null;
+
+  private constructor() {}
+
+  public static getInstance(): GameTimerService {
+    if (!GameTimerService.instance) {
+      GameTimerService.instance = new GameTimerService();
+    }
+    return GameTimerService.instance;
+  }
   /**
    * Calculate time left after a move
    */
@@ -55,4 +65,4 @@ export class GameTimerService {
 }
 
 // Export singleton instance
-export const gameTimerService = new GameTimerService();
+export const gameTimerService = GameTimerService.getInstance();

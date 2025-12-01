@@ -20,6 +20,8 @@ export * from './hooks/useGameStatus';
 export * from './hooks/useGamePropSelector';
 export * from './hooks/useGameSubscription';
 export * from './hooks/useChessGameLogic';
+export * from './hooks/useChessPieceSelection';
+export * from './hooks/useChessMoveValidation';
 export * from './utils/gameLayoutHelpers';
 export * from './types';
 export * from './constants/gameDefaults';

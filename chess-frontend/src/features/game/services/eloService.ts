@@ -10,6 +10,16 @@ import { playerService } from '@/features/player/services/playerService';
 import type { Winner } from '../types/index';
 
 export class EloService {
+  private static instance: EloService | null = null;
+
+  private constructor() {}
+
+  public static getInstance(): EloService {
+    if (!EloService.instance) {
+      EloService.instance = new EloService();
+    }
+    return EloService.instance;
+  }
   /**
    * Calculate ELO change based on game outcome
    */
@@ -170,4 +180,4 @@ export class EloService {
 }
 
 // Export singleton instance
-export const eloService = new EloService();
+export const eloService = EloService.getInstance();

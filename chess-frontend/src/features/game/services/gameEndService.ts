@@ -19,6 +19,16 @@ import type {
 } from '../types/index';
 
 export class GameEndService {
+  private static instance: GameEndService | null = null;
+
+  private constructor() {}
+
+  public static getInstance(): GameEndService {
+    if (!GameEndService.instance) {
+      GameEndService.instance = new GameEndService();
+    }
+    return GameEndService.instance;
+  }
   /**
    * Check if game should end (checkmate, stalemate, draw, timeout)
    */
@@ -204,4 +214,4 @@ export class GameEndService {
 }
 
 // Export singleton instance
-export const gameEndService = new GameEndService();
+export const gameEndService = GameEndService.getInstance();

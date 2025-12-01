@@ -13,6 +13,16 @@ import type { Game, Players } from '@/features/game/types/index';
 const DEFAULT_ELO = 1200;
 
 export class PlayerService {
+  private static instance: PlayerService | null = null;
+
+  private constructor() {}
+
+  public static getInstance(): PlayerService {
+    if (!PlayerService.instance) {
+      PlayerService.instance = new PlayerService();
+    }
+    return PlayerService.instance;
+  }
   /**
    * Join a game as a player
    */
@@ -166,6 +176,6 @@ export class PlayerService {
 }
 
 // Export singleton instance
-export const playerService = new PlayerService();
+export const playerService = PlayerService.getInstance();
 
 export default playerService;

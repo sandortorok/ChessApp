@@ -11,6 +11,16 @@ import type { Chess, Move } from 'chess.js';
 import type { Game, MoveHistoryType } from '../types/index';
 
 export class GameMoveService {
+  private static instance: GameMoveService | null = null;
+
+  private constructor() {}
+
+  public static getInstance(): GameMoveService {
+    if (!GameMoveService.instance) {
+      GameMoveService.instance = new GameMoveService();
+    }
+    return GameMoveService.instance;
+  }
   /**
    * Execute a chess move
    */
@@ -151,4 +161,4 @@ export class GameMoveService {
 }
 
 // Export singleton instance
-export const gameMoveService = new GameMoveService();
+export const gameMoveService = GameMoveService.getInstance();
