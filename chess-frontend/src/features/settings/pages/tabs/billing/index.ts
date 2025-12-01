@@ -1,1 +1,1 @@
-export { default as BillingTab } from "./BillingTab";
+export { default as BillingTab } from './BillingTab';

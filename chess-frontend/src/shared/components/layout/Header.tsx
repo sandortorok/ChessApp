@@ -1,36 +1,36 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogPanel } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { auth, firestore } from "@/lib/firebase/config";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { Dialog, DialogPanel } from '@headlessui/react';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { auth, firestore } from '@/lib/firebase/config';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
 const navigation = [
-  { name: "Home", href: "/" },
-  { name: "Settings", href: "/settings" },
-  { name: "Lobbies", href: "/lobby" },
-  { name: "Game History", href: "/game-history" },
-  { name: "Leaderboard", href: "/leaderboard" },
+  { name: 'Home', href: '/' },
+  { name: 'Settings', href: '/settings' },
+  { name: 'Lobbies', href: '/lobby' },
+  { name: 'Game History', href: '/game-history' },
+  { name: 'Leaderboard', href: '/leaderboard' },
 ];
 
-const DEFAULT_AVATAR = "emoji:👤";
+const DEFAULT_AVATAR = 'emoji:👤';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [avatarURL, setAvatarURL] = useState<string>("");
+  const [avatarURL, setAvatarURL] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      
+
       // Load avatar from Firestore
       if (firebaseUser) {
-        const userDocRef = doc(firestore, "users", firebaseUser.uid);
+        const userDocRef = doc(firestore, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
-        
+
         if (userDoc.exists()) {
           const data = userDoc.data();
           if (data.photoURL) {
@@ -46,10 +46,10 @@ export default function Header() {
           setAvatarURL(DEFAULT_AVATAR);
         }
       } else {
-        setAvatarURL("");
+        setAvatarURL('');
       }
     });
-    
+
     // Listen for avatar updates from other components
     const handleAvatarUpdate = (event: Event) => {
       const customEvent = event as CustomEvent;
@@ -57,9 +57,9 @@ export default function Header() {
         setAvatarURL(customEvent.detail.photoURL);
       }
     };
-    
+
     window.addEventListener('avatarUpdated', handleAvatarUpdate);
-    
+
     return () => {
       unsubscribe();
       window.removeEventListener('avatarUpdated', handleAvatarUpdate);
@@ -69,7 +69,7 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/login");
+      navigate('/login');
     } catch (err) {
       console.error(err);
     }
@@ -78,9 +78,7 @@ export default function Header() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside 
-        className="hidden lg:flex lg:flex-col w-64 bg-slate-800/60 backdrop-blur-lg border-r border-emerald-600/30 shadow-lg sticky top-0 h-screen"
-      >
+      <aside className="hidden lg:flex lg:flex-col w-64 bg-slate-800/60 backdrop-blur-lg border-r border-emerald-600/30 shadow-lg sticky top-0 h-screen">
         {/* Logo */}
         <div className="p-6 border-b border-emerald-600/30">
           <a href="/" className="group flex items-center gap-3">
@@ -93,18 +91,16 @@ export default function Header() {
                 className="relative h-10 w-auto transform group-hover:scale-110 transition-transform duration-300"
               />
             </div>
-            <span className="text-xl font-bold text-white">
-              Chess Arena
-            </span>
+            <span className="text-xl font-bold text-white">Chess Arena</span>
           </a>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           {navigation.map((item) => (
-            <a 
-              key={item.name} 
-              href={item.href} 
+            <a
+              key={item.name}
+              href={item.href}
               className="flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 border border-transparent hover:border-emerald-600/20"
             >
               {item.name}
@@ -122,16 +118,22 @@ export default function Header() {
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg overflow-hidden">
                   {avatarURL.startsWith('emoji:') ? (
-                    <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>
+                    <span className="text-2xl">
+                      {avatarURL.replace('emoji:', '')}
+                    </span>
                   ) : avatarURL ? (
-                    <img src={avatarURL} alt="Avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={avatarURL}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span className="text-2xl">👤</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">
-                    {user.displayName || "Player"}
+                    {user.displayName || 'Player'}
                   </p>
                   <p className="text-xs text-slate-400 truncate">
                     {user.email}
@@ -146,8 +148,8 @@ export default function Header() {
               </button>
             </div>
           ) : (
-            <a 
-              href="/login" 
+            <a
+              href="/login"
               className="block w-full px-6 py-2.5 text-sm font-semibold text-white text-center bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 rounded-lg transition-all duration-200"
             >
               Log in →
@@ -157,20 +159,12 @@ export default function Header() {
       </aside>
 
       {/* Mobile header */}
-      <header 
-        className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg shadow-lg"
-      >
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg shadow-lg">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Logo and title */}
           <a href="/" className="flex items-center gap-2">
-            <img
-              alt="Chess App"
-              src="/logo.png"
-              className="h-8 w-auto"
-            />
-            <span className="text-lg font-bold text-white">
-              Chess Arena
-            </span>
+            <img alt="Chess App" src="/logo.png" className="h-8 w-auto" />
+            <span className="text-lg font-bold text-white">Chess Arena</span>
           </a>
 
           {/* Mobile menu button */}
@@ -187,7 +181,11 @@ export default function Header() {
       </header>
 
       {/* Mobile navigation */}
-      <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
+      <Dialog
+        open={mobileMenuOpen}
+        onClose={setMobileMenuOpen}
+        className="lg:hidden"
+      >
         <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" />
         <DialogPanel className="fixed inset-y-0 right-0 z-[70] w-full overflow-y-auto bg-slate-900 p-6 sm:max-w-sm border-l border-emerald-600/30 shadow-2xl">
           <div className="flex items-center justify-between">
@@ -240,9 +238,15 @@ export default function Header() {
                   >
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold shadow-lg flex-shrink-0 overflow-hidden">
                       {avatarURL.startsWith('emoji:') ? (
-                        <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>
+                        <span className="text-2xl">
+                          {avatarURL.replace('emoji:', '')}
+                        </span>
                       ) : avatarURL ? (
-                        <img src={avatarURL} alt="Avatar" className="w-full h-full object-cover" />
+                        <img
+                          src={avatarURL}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <span className="text-2xl">👤</span>
                       )}

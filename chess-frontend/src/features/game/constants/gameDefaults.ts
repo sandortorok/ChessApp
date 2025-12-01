@@ -1,4 +1,4 @@
-import type { Game } from "../types";
+import type { Game } from '../types';
 
 export const DEFAULT_GAME: Game = {
   fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', // Kezdő pozíció
@@ -15,7 +15,7 @@ export const DEFAULT_GAME: Game = {
   drawOfferedBy: null,
   timeControl: 5,
   increment: 0,
-  opponentType: undefined,
+  opponentType: 'human',
   startingElo: undefined,
-  finalElo: undefined
+  finalElo: undefined,
 };

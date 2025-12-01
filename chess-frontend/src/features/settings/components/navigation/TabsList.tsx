@@ -5,16 +5,16 @@ import {
   CreditCardIcon,
   UsersIcon,
   ClipboardIcon,
-} from "@heroicons/react/24/outline";
-import TabItem from "./TabItem";
+} from '@heroicons/react/24/outline';
+import TabItem from './TabItem';
 
 export const tabs = [
-  { name: "Profile", icon: CogIcon },
-  { name: "History", icon: ClipboardIcon },
-  { name: "Security", icon: ShieldCheckIcon },
-  { name: "Notifications", icon: BellIcon },
-  { name: "Billing", icon: CreditCardIcon },
-  { name: "Friends", icon: UsersIcon },
+  { name: 'Profile', icon: CogIcon },
+  { name: 'History', icon: ClipboardIcon },
+  { name: 'Security', icon: ShieldCheckIcon },
+  { name: 'Notifications', icon: BellIcon },
+  { name: 'Billing', icon: CreditCardIcon },
+  { name: 'Friends', icon: UsersIcon },
 ];
 
 interface TabsListProps {

@@ -1,8 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import { useParams, useLocation } from 'react-router-dom';
-import { auth } from '@/lib/firebase/config';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { useAuth } from '@/features/auth';
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from 'react-chessboard';
 import type { Square } from '../types/index';
 import MoveHistory from './MoveHistory';
@@ -38,17 +37,11 @@ export default function ChessGame() {
     from: Square;
     to: Square;
   } | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { user: currentUser } = useAuth();
   /** When not null, user is viewing a historical position instead of live game */
   const [viewingHistoryIndex, setViewingHistoryIndex] = useState<number | null>(
     null
   );
-
-  // Auth listener
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setCurrentUser(u));
-    return () => unsub();
-  }, []);
 
   // Create game if not exists
   useGameInitializer(gameId, gameSettings, currentUser);
@@ -67,7 +60,9 @@ export default function ChessGame() {
     if (!gameId || !currentUser) return;
     gameStateManagementService.createFirebaseSubscription(gameId);
 
-    return () => {};
+    return () => {
+      gameStateManagementService.unsubscribeFromGame();
+    };
   }, [gameId, currentUser]);
 
   //Subscribe to game changes

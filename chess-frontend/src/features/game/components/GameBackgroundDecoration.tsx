@@ -1,5 +1,3 @@
-import React from 'react';
-
 /** Background decorations for the chess game - animated gradients and floating chess pieces */
 export function GameBackgroundDecoration() {
   return (
@@ -12,9 +10,7 @@ export function GameBackgroundDecoration() {
 
       {/* Floating chess pieces */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-        <div className="absolute top-20 left-10 text-6xl animate-float">
-          ♔
-        </div>
+        <div className="absolute top-20 left-10 text-6xl animate-float">♔</div>
         <div className="absolute top-40 right-20 text-5xl animate-float delay-1000">
           ♕
         </div>

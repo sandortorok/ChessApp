@@ -1,11 +1,14 @@
-import { Lock } from "lucide-react";
+import { Lock } from 'lucide-react';
 
 interface PrivacySectionProps {
   profileVisibility: string;
   onVisibilityChange: (visibility: string) => void;
 }
 
-export default function PrivacySection({ profileVisibility, onVisibilityChange }: PrivacySectionProps) {
+export default function PrivacySection({
+  profileVisibility,
+  onVisibilityChange,
+}: PrivacySectionProps) {
   return (
     <div className="bg-slate-800/60 border border-emerald-600/30 rounded-lg overflow-hidden">
       <div className="px-6 py-4 bg-slate-900/50 border-b border-emerald-600/20">
@@ -16,7 +19,9 @@ export default function PrivacySection({ profileVisibility, onVisibilityChange }
       </div>
 
       <div className="px-6 py-6">
-        <label className="text-sm font-medium text-emerald-300 mb-3 block">Profile Visibility</label>
+        <label className="text-sm font-medium text-emerald-300 mb-3 block">
+          Profile Visibility
+        </label>
         <select
           value={profileVisibility}
           onChange={(e) => onVisibilityChange(e.target.value)}

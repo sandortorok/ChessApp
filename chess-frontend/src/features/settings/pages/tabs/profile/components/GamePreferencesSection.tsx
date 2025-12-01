@@ -1,4 +1,4 @@
-import { Palette, Volume2 } from "lucide-react";
+import { Palette, Volume2 } from 'lucide-react';
 
 interface GameSettings {
   boardTheme: string;
@@ -11,7 +11,10 @@ interface GamePreferencesSectionProps {
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
 }
 
-export default function GamePreferencesSection({ settings, onUpdateSettings }: GamePreferencesSectionProps) {
+export default function GamePreferencesSection({
+  settings,
+  onUpdateSettings,
+}: GamePreferencesSectionProps) {
   return (
     <div className="bg-slate-800/60 border border-emerald-600/30 rounded-lg overflow-hidden">
       <div className="px-6 py-4 bg-slate-900/50 border-b border-emerald-600/20">
@@ -24,7 +27,9 @@ export default function GamePreferencesSection({ settings, onUpdateSettings }: G
       <div className="divide-y divide-emerald-600/20">
         {/* Board Theme */}
         <div className="px-6 py-6 hover:bg-slate-700/30 transition-colors">
-          <label className="text-sm font-medium text-emerald-300 mb-3 block">Board Theme</label>
+          <label className="text-sm font-medium text-emerald-300 mb-3 block">
+            Board Theme
+          </label>
           <select
             value={settings.boardTheme}
             onChange={(e) => onUpdateSettings({ boardTheme: e.target.value })}
@@ -39,22 +44,28 @@ export default function GamePreferencesSection({ settings, onUpdateSettings }: G
 
         {/* Sound Settings */}
         <div className="px-6 py-6 hover:bg-slate-700/30 transition-colors">
-          <label className="text-sm font-medium text-emerald-300 mb-3 block">Sound Effects</label>
+          <label className="text-sm font-medium text-emerald-300 mb-3 block">
+            Sound Effects
+          </label>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-white">Enable Sounds</span>
               <button
-                onClick={() => onUpdateSettings({ soundEnabled: !settings.soundEnabled })}
+                onClick={() =>
+                  onUpdateSettings({ soundEnabled: !settings.soundEnabled })
+                }
                 className={`relative w-12 h-6 rounded-full transition-colors ${
                   settings.soundEnabled ? 'bg-emerald-600' : 'bg-slate-600'
                 }`}
               >
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  settings.soundEnabled ? 'translate-x-6' : 'translate-x-0'
-                }`} />
+                <div
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    settings.soundEnabled ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
               </button>
             </div>
-            
+
             {settings.soundEnabled && (
               <div className="flex items-center gap-4">
                 <Volume2 className="w-5 h-5 text-emerald-400" />
@@ -63,10 +74,14 @@ export default function GamePreferencesSection({ settings, onUpdateSettings }: G
                   min="0"
                   max="100"
                   value={settings.volume}
-                  onChange={(e) => onUpdateSettings({ volume: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    onUpdateSettings({ volume: parseInt(e.target.value) })
+                  }
                   className="flex-1 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
-                <span className="text-white text-sm w-10">{settings.volume}%</span>
+                <span className="text-white text-sm w-10">
+                  {settings.volume}%
+                </span>
               </div>
             )}
           </div>

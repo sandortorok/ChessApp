@@ -5,7 +5,12 @@
 
 export type LichessAILevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type Color = 'white' | 'black' | 'random';
-export type Speed = 'bullet' | 'blitz' | 'rapid' | 'classical' | 'correspondence';
+export type Speed =
+  | 'bullet'
+  | 'blitz'
+  | 'rapid'
+  | 'classical'
+  | 'correspondence';
 
 interface LichessChallenge {
   id: string;
@@ -257,12 +262,15 @@ class LichessService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/board/game/${gameId}/resign`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiToken}`,
-        },
-      });
+      const response = await fetch(
+        `${this.baseURL}/board/game/${gameId}/resign`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiToken}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to resign: ${response.status}`);
@@ -282,12 +290,15 @@ class LichessService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/board/game/${gameId}/abort`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiToken}`,
-        },
-      });
+      const response = await fetch(
+        `${this.baseURL}/board/game/${gameId}/abort`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiToken}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to abort: ${response.status}`);
@@ -300,7 +311,10 @@ class LichessService {
     }
   }
 
-  async handleDrawOffer(gameId: string, accept: boolean): Promise<{ ok: boolean }> {
+  async handleDrawOffer(
+    gameId: string,
+    accept: boolean
+  ): Promise<{ ok: boolean }> {
     if (!this.hasToken()) {
       throw new Error('Lichess API token not set. Use setToken() first.');
     }
@@ -361,7 +375,7 @@ class LichessService {
   async getBestMove(fen: string): Promise<string | null> {
     try {
       const evaluation = await this.getCloudEvaluation(fen, 1);
-      
+
       if (evaluation.pvs && evaluation.pvs.length > 0) {
         const bestLine = evaluation.pvs[0];
         if (bestLine.moves) {
@@ -370,7 +384,7 @@ class LichessService {
           return moves[0] || null;
         }
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error getting best move:', error);

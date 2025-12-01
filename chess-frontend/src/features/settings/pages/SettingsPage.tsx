@@ -1,29 +1,29 @@
-import { useState } from "react";
-import SettingsSidebar from "../components/SettingsSidebar";
-import SettingsMobileHeader from "../components/SettingsMobileHeader";
-import ProfileTab from "./tabs/profile/ProfileTab";
-import HistoryTab from "./tabs/history/HistoryTab";
-import SecurityTab from "./tabs/security/SecurityTab";
-import NotificationsTab from "./tabs/notifications/NotificationsTab";
-import BillingTab from "./tabs/billing/BillingTab";
-import FriendsTab from "./tabs/friends/FriendsTab";
+import { useState } from 'react';
+import SettingsSidebar from '../components/SettingsSidebar';
+import SettingsMobileHeader from '../components/SettingsMobileHeader';
+import ProfileTab from './tabs/profile/ProfileTab';
+import HistoryTab from './tabs/history/HistoryTab';
+import SecurityTab from './tabs/security/SecurityTab';
+import NotificationsTab from './tabs/notifications/NotificationsTab';
+import BillingTab from './tabs/billing/BillingTab';
+import FriendsTab from './tabs/friends/FriendsTab';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("Profile");
+  const [activeTab, setActiveTab] = useState('Profile');
 
   const renderContent = () => {
     switch (activeTab) {
-      case "Profile":
+      case 'Profile':
         return <ProfileTab />;
-      case "History":
+      case 'History':
         return <HistoryTab />;
-      case "Security":
+      case 'Security':
         return <SecurityTab />;
-      case "Notifications":
+      case 'Notifications':
         return <NotificationsTab />;
-      case "Billing":
+      case 'Billing':
         return <BillingTab />;
-      case "Friends":
+      case 'Friends':
         return <FriendsTab />;
       default:
         return <ProfileTab />;
@@ -40,12 +40,12 @@ export default function SettingsPage() {
         <main className="flex-1 p-6 md:p-8">
           <div className="hidden sm:block mb-6">
             <h1 className="text-3xl font-bold text-white">{activeTab}</h1>
-            <p className="text-slate-400 mt-1">Manage your {activeTab.toLowerCase()} settings</p>
+            <p className="text-slate-400 mt-1">
+              Manage your {activeTab.toLowerCase()} settings
+            </p>
           </div>
 
-          <div className="space-y-6">
-            {renderContent()}
-          </div>
+          <div className="space-y-6">{renderContent()}</div>
         </main>
       </div>
     </div>

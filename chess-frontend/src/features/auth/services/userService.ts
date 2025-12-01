@@ -1,7 +1,7 @@
-import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
-import { firestore } from "@/lib/firebase/config";
-import type { User } from "firebase/auth";
-import type { UserProfile } from "../types/index";
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase/config';
+import type { User } from 'firebase/auth';
+import type { UserProfile } from '../types/index';
 
 const DEFAULT_ELO = 1200;
 
@@ -21,7 +21,7 @@ export async function createUserProfile(user: User): Promise<UserProfile> {
     updatedAt: Date.now(),
   };
 
-  const userRef = doc(firestore, "users", user.uid);
+  const userRef = doc(firestore, 'users', user.uid);
   await setDoc(userRef, userProfile);
 
   return userProfile;
@@ -31,7 +31,7 @@ export async function createUserProfile(user: User): Promise<UserProfile> {
  * Lekéri a felhasználó profilját, ha nem létezik, létrehozza
  */
 export async function getUserProfile(user: User): Promise<UserProfile> {
-  const userRef = doc(firestore, "users", user.uid);
+  const userRef = doc(firestore, 'users', user.uid);
   const userSnap = await getDoc(userRef);
 
   if (userSnap.exists()) {
@@ -45,8 +45,11 @@ export async function getUserProfile(user: User): Promise<UserProfile> {
 /**
  * Frissíti a felhasználó ELO értékét
  */
-export async function updateUserElo(uid: string, newElo: number): Promise<void> {
-  const userRef = doc(firestore, "users", uid);
+export async function updateUserElo(
+  uid: string,
+  newElo: number
+): Promise<void> {
+  const userRef = doc(firestore, 'users', uid);
   await updateDoc(userRef, {
     elo: newElo,
     updatedAt: Date.now(),
@@ -57,7 +60,7 @@ export async function updateUserElo(uid: string, newElo: number): Promise<void> 
  * Növeli a felhasználó győzelmeinek számát
  */
 export async function incrementWins(uid: string): Promise<void> {
-  const userRef = doc(firestore, "users", uid);
+  const userRef = doc(firestore, 'users', uid);
   await updateDoc(userRef, {
     wins: increment(1),
     updatedAt: Date.now(),
@@ -68,7 +71,7 @@ export async function incrementWins(uid: string): Promise<void> {
  * Növeli a felhasználó vereségeinek számát
  */
 export async function incrementLosses(uid: string): Promise<void> {
-  const userRef = doc(firestore, "users", uid);
+  const userRef = doc(firestore, 'users', uid);
   await updateDoc(userRef, {
     losses: increment(1),
     updatedAt: Date.now(),
@@ -79,7 +82,7 @@ export async function incrementLosses(uid: string): Promise<void> {
  * Növeli a felhasználó döntetlenjeinek számát
  */
 export async function incrementDraws(uid: string): Promise<void> {
-  const userRef = doc(firestore, "users", uid);
+  const userRef = doc(firestore, 'users', uid);
   await updateDoc(userRef, {
     draws: increment(1),
     updatedAt: Date.now(),
@@ -102,7 +105,7 @@ export function calculateNewElo(
  * Frissíti mindkét játékos ELO-ját a játék eredménye alapján
  */
 export async function updatePlayersElo(
-  winner: "white" | "black" | "draw",
+  winner: 'white' | 'black' | 'draw',
   whiteUid: string,
   blackUid: string,
   whiteElo: number,
@@ -111,10 +114,10 @@ export async function updatePlayersElo(
   let whiteScore: number;
   let blackScore: number;
 
-  if (winner === "white") {
+  if (winner === 'white') {
     whiteScore = 1;
     blackScore = 0;
-  } else if (winner === "black") {
+  } else if (winner === 'black') {
     whiteScore = 0;
     blackScore = 1;
   } else {
@@ -130,11 +133,11 @@ export async function updatePlayersElo(
   await Promise.all([
     updateUserElo(whiteUid, newWhiteElo),
     updateUserElo(blackUid, newBlackElo),
-    winner === "white"
+    winner === 'white'
       ? Promise.all([incrementWins(whiteUid), incrementLosses(blackUid)])
-      : winner === "black"
-      ? Promise.all([incrementLosses(whiteUid), incrementWins(blackUid)])
-      : Promise.all([incrementDraws(whiteUid), incrementDraws(blackUid)]),
+      : winner === 'black'
+        ? Promise.all([incrementLosses(whiteUid), incrementWins(blackUid)])
+        : Promise.all([incrementDraws(whiteUid), incrementDraws(blackUid)]),
   ]);
 
   return { newWhiteElo, newBlackElo };

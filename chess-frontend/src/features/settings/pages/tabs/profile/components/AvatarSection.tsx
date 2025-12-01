@@ -3,7 +3,10 @@ interface AvatarSectionProps {
   onChangeClick: () => void;
 }
 
-export default function AvatarSection({ avatarURL, onChangeClick }: AvatarSectionProps) {
+export default function AvatarSection({
+  avatarURL,
+  onChangeClick,
+}: AvatarSectionProps) {
   return (
     <div className="bg-slate-800/60 border border-emerald-600/30 rounded-lg overflow-hidden">
       <div className="px-6 py-4 bg-slate-900/50 border-b border-emerald-600/20">
@@ -12,14 +15,16 @@ export default function AvatarSection({ avatarURL, onChangeClick }: AvatarSectio
           Choose an emoji avatar
         </p>
       </div>
-      
+
       <div className="px-6 py-6">
         <div className="flex items-center gap-6">
           {/* Current Avatar */}
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-slate-700 border-2 border-emerald-500/30 overflow-hidden flex items-center justify-center">
               {avatarURL.startsWith('emoji:') ? (
-                <span className="text-5xl">{avatarURL.replace('emoji:', '')}</span>
+                <span className="text-5xl">
+                  {avatarURL.replace('emoji:', '')}
+                </span>
               ) : (
                 <span className="text-5xl">👤</span>
               )}

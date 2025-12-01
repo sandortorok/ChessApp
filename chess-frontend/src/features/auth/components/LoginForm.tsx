@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, signInGuest, googleProvider } from "@/lib/firebase/config";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { auth, signInGuest, googleProvider } from '@/lib/firebase/config';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function LoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/");
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -29,7 +29,7 @@ export default function LoginForm() {
     setIsLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      navigate("/");
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -42,8 +42,8 @@ export default function LoginForm() {
     setIsLoading(true);
     try {
       const user = await signInGuest();
-      navigate("/");
-      console.log("Logged in as guest:", user.uid);
+      navigate('/');
+      console.log('Logged in as guest:', user.uid);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -92,7 +92,10 @@ export default function LoginForm() {
           <form onSubmit={handleSubmit} className="relative space-y-6">
             {/* Email input */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Email address
               </label>
               <div className="relative group">
@@ -114,10 +117,16 @@ export default function LoginForm() {
             {/* Password input */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-200">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-200"
+                >
                   Password
                 </label>
-                <a href="#" className="text-sm font-medium text-teal-400 hover:text-teal-300 transition-colors">
+                <a
+                  href="#"
+                  className="text-sm font-medium text-teal-400 hover:text-teal-300 transition-colors"
+                >
                   Forgot password?
                 </a>
               </div>
@@ -140,8 +149,16 @@ export default function LoginForm() {
             {/* Error message */}
             {error && (
               <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <p className="text-sm text-red-400">{error}</p>
               </div>
@@ -157,14 +174,29 @@ export default function LoginForm() {
               <span className="relative flex items-center justify-center gap-2">
                 {isLoading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <svg
+                      className="animate-spin h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     Signing in...
                   </>
                 ) : (
-                  "Sign In"
+                  'Sign In'
                 )}
               </span>
             </button>
@@ -176,7 +208,9 @@ export default function LoginForm() {
               <div className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-900/50 text-gray-400">Or continue with</span>
+              <span className="px-4 bg-gray-900/50 text-gray-400">
+                Or continue with
+              </span>
             </div>
           </div>
 
@@ -203,7 +237,11 @@ export default function LoginForm() {
               className="group relative flex items-center justify-center gap-2 rounded-xl bg-gray-800/50 border border-gray-700 px-4 py-3 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 18 19">
-                <path fillRule="evenodd" d="M8.842 18.083a8.8 8.8 0 0 1-8.65-8.948 8.841 8.841 0 0 1 8.8-8.652h.153a8.464 8.464 0 0 1 5.7 2.257l-2.193 2.038A5.27 5.27 0 0 0 9.09 3.4a5.882 5.882 0 0 0-.2 11.76h.124a5.091 5.091 0 0 0 5.248-4.057L14.3 11H9V8h8.34c.066.543.095 1.09.088 1.636-.086 5.053-3.463 8.449-8.4 8.449l-.186-.002Z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M8.842 18.083a8.8 8.8 0 0 1-8.65-8.948 8.841 8.841 0 0 1 8.8-8.652h.153a8.464 8.464 0 0 1 5.7 2.257l-2.193 2.038A5.27 5.27 0 0 0 9.09 3.4a5.882 5.882 0 0 0-.2 11.76h.124a5.091 5.091 0 0 0 5.248-4.057L14.3 11H9V8h8.34c.066.543.095 1.09.088 1.636-.086 5.053-3.463 8.449-8.4 8.449l-.186-.002Z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>Google</span>
             </button>
@@ -213,7 +251,10 @@ export default function LoginForm() {
         {/* Sign up link */}
         <p className="mt-6 text-center text-sm text-gray-400">
           Don't have an account?{' '}
-          <a href="/register" className="font-semibold text-teal-400 hover:text-teal-300 transition-colors">
+          <a
+            href="/register"
+            className="font-semibold text-teal-400 hover:text-teal-300 transition-colors"
+          >
             Create one now
           </a>
         </p>

@@ -1,11 +1,14 @@
-import { Bell } from "lucide-react";
+import { Bell } from 'lucide-react';
 
 interface NotificationsSectionProps {
   emailNotifications: boolean;
   onToggle: () => void;
 }
 
-export default function NotificationsSection({ emailNotifications, onToggle }: NotificationsSectionProps) {
+export default function NotificationsSection({
+  emailNotifications,
+  onToggle,
+}: NotificationsSectionProps) {
   return (
     <div className="bg-slate-800/60 border border-emerald-600/30 rounded-lg overflow-hidden">
       <div className="px-6 py-4 bg-slate-900/50 border-b border-emerald-600/20">
@@ -19,7 +22,9 @@ export default function NotificationsSection({ emailNotifications, onToggle }: N
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white font-medium">Email Notifications</p>
-            <p className="text-sm text-slate-400 mt-1">Receive email about game invitations and results</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Receive email about game invitations and results
+            </p>
           </div>
           <button
             onClick={onToggle}
@@ -27,9 +32,11 @@ export default function NotificationsSection({ emailNotifications, onToggle }: N
               emailNotifications ? 'bg-emerald-600' : 'bg-slate-600'
             }`}
           >
-            <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-              emailNotifications ? 'translate-x-6' : 'translate-x-0'
-            }`} />
+            <div
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                emailNotifications ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            />
           </button>
         </div>
       </div>

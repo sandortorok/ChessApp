@@ -18,14 +18,56 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Layout><HomePage /></Layout>} />
-        <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
-        <Route path="/lobby" element={<Layout><LobbyPage /></Layout>} />
-        <Route path="/game-history" element={<Layout><GameHistoryPage /></Layout>} />
-        <Route path="/leaderboard" element={<Layout><LeaderboardPage /></Layout>} />
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <HomePage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Layout>
+              <SettingsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/lobby"
+          element={
+            <Layout>
+              <LobbyPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/game-history"
+          element={
+            <Layout>
+              <GameHistoryPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <Layout>
+              <LeaderboardPage />
+            </Layout>
+          }
+        />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
-        <Route path="/game/:gameId" element={<Layout><ChessGame /></Layout>} />
+        <Route
+          path="/game/:gameId"
+          element={
+            <Layout>
+              <ChessGame />
+            </Layout>
+          }
+        />
       </Routes>
     </Router>
   );

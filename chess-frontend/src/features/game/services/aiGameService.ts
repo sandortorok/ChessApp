@@ -3,8 +3,8 @@
  * Handles AI opponent games using Lichess API
  */
 
-import { Chess } from "chess.js";
-import { lichessService, type LichessAILevel } from "./lichessService";
+import { Chess } from 'chess.js';
+import { lichessService, type LichessAILevel } from './lichessService';
 
 export class AIGameService {
   private activeGames: Map<string, string> = new Map(); // gameId -> lichessGameId
@@ -16,31 +16,39 @@ export class AIGameService {
   async startAIGame(
     gameId: string,
     level: LichessAILevel,
-    playerColor: "white" | "black" | "random",
+    playerColor: 'white' | 'black' | 'random',
     timeControl?: { limit: number; increment: number }
-  ): Promise<{ lichessGameId: string; lichessUrl: string; assignedColor: "white" | "black" }> {
+  ): Promise<{
+    lichessGameId: string;
+    lichessUrl: string;
+    assignedColor: 'white' | 'black';
+  }> {
     try {
       // Challenge Lichess AI
-      const challenge = await lichessService.challengeAI(level, playerColor, timeControl);
-      
+      const challenge = await lichessService.challengeAI(
+        level,
+        playerColor,
+        timeControl
+      );
+
       // Store the mapping
       this.activeGames.set(gameId, challenge.id);
-      
-      console.log("AI game started:", {
+
+      console.log('AI game started:', {
         gameId,
         lichessGameId: challenge.id,
         level,
         color: challenge.color,
-        url: challenge.url
+        url: challenge.url,
       });
 
       return {
         lichessGameId: challenge.id,
         lichessUrl: challenge.url,
-        assignedColor: challenge.color
+        assignedColor: challenge.color,
       };
     } catch (error) {
-      console.error("Error starting AI game:", error);
+      console.error('Error starting AI game:', error);
       throw error;
     }
   }
@@ -56,7 +64,7 @@ export class AIGameService {
     const cleanup = lichessService.streamGameState(
       lichessGameId,
       (state) => {
-        console.log("Lichess game state:", state);
+        console.log('Lichess game state:', state);
 
         // Parse moves and get the latest one
         if (state.moves) {
@@ -68,12 +76,21 @@ export class AIGameService {
         }
 
         // Check game status
-        if (state.status === "mate" || state.status === "resign" || state.status === "stalemate") {
-          console.log("Lichess game ended:", state.status, "Winner:", state.winner);
+        if (
+          state.status === 'mate' ||
+          state.status === 'resign' ||
+          state.status === 'stalemate'
+        ) {
+          console.log(
+            'Lichess game ended:',
+            state.status,
+            'Winner:',
+            state.winner
+          );
         }
       },
       (fullGame) => {
-        console.log("Lichess full game data:", fullGame);
+        console.log('Lichess full game data:', fullGame);
       }
     );
 
@@ -87,14 +104,14 @@ export class AIGameService {
   async makeAIMove(gameId: string, uciMove: string): Promise<void> {
     const lichessGameId = this.activeGames.get(gameId);
     if (!lichessGameId) {
-      throw new Error("No active Lichess game for this game ID");
+      throw new Error('No active Lichess game for this game ID');
     }
 
     try {
       await lichessService.makeMove(lichessGameId, uciMove);
-      console.log("Move sent to Lichess:", uciMove);
+      console.log('Move sent to Lichess:', uciMove);
     } catch (error) {
-      console.error("Error making move to Lichess:", error);
+      console.error('Error making move to Lichess:', error);
       throw error;
     }
   }
@@ -107,7 +124,7 @@ export class AIGameService {
       const bestMove = await lichessService.getBestMove(fen);
       return bestMove;
     } catch (error) {
-      console.error("Error getting hint:", error);
+      console.error('Error getting hint:', error);
       return null;
     }
   }
@@ -141,14 +158,14 @@ export class AIGameService {
   async resignAIGame(gameId: string): Promise<void> {
     const lichessGameId = this.activeGames.get(gameId);
     if (!lichessGameId) {
-      throw new Error("No active Lichess game for this game ID");
+      throw new Error('No active Lichess game for this game ID');
     }
 
     try {
       await lichessService.resign(lichessGameId);
-      console.log("Resigned from Lichess game:", lichessGameId);
+      console.log('Resigned from Lichess game:', lichessGameId);
     } catch (error) {
-      console.error("Error resigning from Lichess:", error);
+      console.error('Error resigning from Lichess:', error);
       throw error;
     }
   }
@@ -159,14 +176,14 @@ export class AIGameService {
   async abortAIGame(gameId: string): Promise<void> {
     const lichessGameId = this.activeGames.get(gameId);
     if (!lichessGameId) {
-      throw new Error("No active Lichess game for this game ID");
+      throw new Error('No active Lichess game for this game ID');
     }
 
     try {
       await lichessService.abort(lichessGameId);
-      console.log("Aborted Lichess game:", lichessGameId);
+      console.log('Aborted Lichess game:', lichessGameId);
     } catch (error) {
-      console.error("Error aborting Lichess game:", error);
+      console.error('Error aborting Lichess game:', error);
       throw error;
     }
   }
@@ -184,8 +201,8 @@ export class AIGameService {
 
     // Remove from active games
     this.activeGames.delete(gameId);
-    
-    console.log("AI game cleaned up:", gameId);
+
+    console.log('AI game cleaned up:', gameId);
   }
 
   /**
@@ -236,8 +253,8 @@ export class AIGameService {
 
     // Cleanup Lichess service
     lichessService.cleanup();
-    
-    console.log("All AI games cleaned up");
+
+    console.log('All AI games cleaned up');
   }
 }
 

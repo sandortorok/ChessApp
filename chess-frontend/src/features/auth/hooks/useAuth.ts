@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
-import { getUserProfile } from "../services/userService";
-import type { UserProfile } from "../types/index";
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
+import { getUserProfile } from '../services/userService';
+import type { UserProfile } from '../types/index';
 
 /** Syncs Firebase Auth state with Firestore user profile */
 export function useAuth() {
@@ -13,22 +13,22 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      
+
       if (firebaseUser) {
         try {
           // Betöltjük vagy létrehozzuk a felhasználó profilját
           const profile = await getUserProfile(firebaseUser);
           setUserProfile(profile);
         } catch (error) {
-          console.error("Error loading user profile:", error);
+          console.error('Error loading user profile:', error);
         }
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
-    
+
     return () => unsubscribe();
   }, []);
 

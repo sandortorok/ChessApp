@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
-import type { Observable } from "rxjs";
+import { useEffect, useState } from 'react';
+import type { Observable } from 'rxjs';
 
-export function useObservable<T>(observable$: Observable<T>, initialValue: T): T {
+export function useObservable<T>(
+  observable$: Observable<T>,
+  initialValue: T
+): T {
   const [value, setValue] = useState<T>(initialValue);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X } from 'lucide-react';
 
 interface AvatarModalProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ export default function AvatarModal({
   onClose,
   avatarOptions,
   onSelectEmoji,
-  isLoading
+  isLoading,
 }: AvatarModalProps) {
   if (!isOpen) return null;
 
@@ -32,7 +32,9 @@ export default function AvatarModal({
 
         <div className="p-6">
           <div>
-            <h4 className="text-lg font-semibold text-white mb-4">Choose Emoji</h4>
+            <h4 className="text-lg font-semibold text-white mb-4">
+              Choose Emoji
+            </h4>
             <div className="grid grid-cols-5 sm:grid-cols-8 gap-3">
               {avatarOptions.map((emoji) => (
                 <button

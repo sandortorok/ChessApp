@@ -1,11 +1,14 @@
-import { tabs } from "./navigation";
+import { tabs } from './navigation';
 
 interface SettingsMobileHeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
-export default function SettingsMobileHeader({ activeTab, onTabChange }: SettingsMobileHeaderProps) {
+export default function SettingsMobileHeader({
+  activeTab,
+  onTabChange,
+}: SettingsMobileHeaderProps) {
   return (
     <div className="sm:hidden border-b border-emerald-600/30 bg-slate-800/60 backdrop-blur-sm sticky top-0 z-50">
       <div className="p-4">

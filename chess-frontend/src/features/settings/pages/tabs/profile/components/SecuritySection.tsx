@@ -1,28 +1,33 @@
-import { useState } from "react";
-import { Lock } from "lucide-react";
+import { useState } from 'react';
+import { Lock } from 'lucide-react';
 
 interface SecuritySectionProps {
-  onPasswordChange: (newPassword: string, confirmPassword: string) => Promise<{ success: boolean; error?: string }>;
+  onPasswordChange: (
+    newPassword: string,
+    confirmPassword: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
-export default function SecuritySection({ onPasswordChange }: SecuritySectionProps) {
+export default function SecuritySection({
+  onPasswordChange,
+}: SecuritySectionProps) {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isChanging, setIsChanging] = useState(false);
 
   const handlePasswordChange = async () => {
-    setPasswordError("");
+    setPasswordError('');
     setIsChanging(true);
 
     try {
       const result = await onPasswordChange(newPassword, confirmPassword);
-      
+
       if (result.success) {
         setShowPasswordChange(false);
-        setNewPassword("");
-        setConfirmPassword("");
+        setNewPassword('');
+        setConfirmPassword('');
       } else if (result.error) {
         setPasswordError(result.error);
       }
@@ -33,9 +38,9 @@ export default function SecuritySection({ onPasswordChange }: SecuritySectionPro
 
   const handleCancel = () => {
     setShowPasswordChange(false);
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordError("");
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
   };
 
   return (
@@ -58,7 +63,9 @@ export default function SecuritySection({ onPasswordChange }: SecuritySectionPro
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-emerald-300 mb-2 block">New Password</label>
+              <label className="text-sm font-medium text-emerald-300 mb-2 block">
+                New Password
+              </label>
               <input
                 type="password"
                 value={newPassword}
@@ -68,7 +75,9 @@ export default function SecuritySection({ onPasswordChange }: SecuritySectionPro
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-emerald-300 mb-2 block">Confirm Password</label>
+              <label className="text-sm font-medium text-emerald-300 mb-2 block">
+                Confirm Password
+              </label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -86,7 +95,7 @@ export default function SecuritySection({ onPasswordChange }: SecuritySectionPro
                 disabled={isChanging}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white font-medium rounded-lg transition-all"
               >
-                {isChanging ? "Updating..." : "Update Password"}
+                {isChanging ? 'Updating...' : 'Update Password'}
               </button>
               <button
                 onClick={handleCancel}

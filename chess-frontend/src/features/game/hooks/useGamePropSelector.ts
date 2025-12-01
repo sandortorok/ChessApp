@@ -1,6 +1,6 @@
-import { useObservable } from "@/shared";
-import { gameStateManagementService, type Game } from "..";
-import { distinctUntilChanged, map } from "rxjs";
+import { useObservable } from '@/shared';
+import { gameStateManagementService, type Game } from '..';
+import { distinctUntilChanged, map } from 'rxjs';
 
 export function useGamePropSelector<T>(
   selector: (game: Game) => T,
@@ -14,4 +14,3 @@ export function useGamePropSelector<T>(
     defaultValue
   );
 }
-

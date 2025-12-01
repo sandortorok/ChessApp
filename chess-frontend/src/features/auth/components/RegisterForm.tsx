@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { useState } from 'react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
 
 export default function RegisterForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,12 +16,12 @@ export default function RegisterForm() {
     setSuccess(false);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError('Password must be at least 6 characters long');
       return;
     }
 
@@ -30,9 +30,9 @@ export default function RegisterForm() {
       await createUserWithEmailAndPassword(auth, email, password);
       setSuccess(true);
       // Clear form
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -51,10 +51,14 @@ export default function RegisterForm() {
   };
 
   const passwordStrength = getPasswordStrength();
-  const strengthColor = 
-    passwordStrength >= 75 ? "bg-green-500" :
-    passwordStrength >= 50 ? "bg-yellow-500" :
-    passwordStrength >= 25 ? "bg-orange-500" : "bg-red-500";
+  const strengthColor =
+    passwordStrength >= 75
+      ? 'bg-green-500'
+      : passwordStrength >= 50
+        ? 'bg-yellow-500'
+        : passwordStrength >= 25
+          ? 'bg-orange-500'
+          : 'bg-red-500';
 
   return (
     <div className="flex min-h-screen items-center justify-center px-6 py-12 relative overflow-hidden">
@@ -97,7 +101,10 @@ export default function RegisterForm() {
           <form onSubmit={handleSubmit} className="relative space-y-6">
             {/* Email input */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Email address
               </label>
               <div className="relative group">
@@ -118,7 +125,10 @@ export default function RegisterForm() {
 
             {/* Password input */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Password
               </label>
               <div className="relative group">
@@ -135,20 +145,24 @@ export default function RegisterForm() {
                 />
                 <div className="absolute inset-0 rounded-xl bg-teal-500/0 group-hover:bg-teal-500/5 pointer-events-none transition-colors" />
               </div>
-              
+
               {/* Password strength indicator */}
               {password && (
                 <div className="mt-2">
                   <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full transition-all duration-300 ${strengthColor}`}
                       style={{ width: `${passwordStrength}%` }}
                     />
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
-                    {passwordStrength >= 75 ? "Strong password" :
-                     passwordStrength >= 50 ? "Good password" :
-                     passwordStrength >= 25 ? "Weak password" : "Very weak password"}
+                    {passwordStrength >= 75
+                      ? 'Strong password'
+                      : passwordStrength >= 50
+                        ? 'Good password'
+                        : passwordStrength >= 25
+                          ? 'Weak password'
+                          : 'Very weak password'}
                   </p>
                 </div>
               )}
@@ -156,7 +170,10 @@ export default function RegisterForm() {
 
             {/* Confirm Password input */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Confirm Password
               </label>
               <div className="relative group">
@@ -178,17 +195,35 @@ export default function RegisterForm() {
                 <div className="mt-2 flex items-center gap-2">
                   {password === confirmPassword ? (
                     <>
-                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4 text-green-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       <p className="text-xs text-green-400">Passwords match</p>
                     </>
                   ) : (
                     <>
-                      <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4 text-red-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
                       </svg>
-                      <p className="text-xs text-red-400">Passwords don't match</p>
+                      <p className="text-xs text-red-400">
+                        Passwords don't match
+                      </p>
                     </>
                   )}
                 </div>
@@ -198,8 +233,16 @@ export default function RegisterForm() {
             {/* Error message */}
             {error && (
               <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <p className="text-sm text-red-400">{error}</p>
               </div>
@@ -208,12 +251,24 @@ export default function RegisterForm() {
             {/* Success message */}
             {success && (
               <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3 flex items-start gap-3">
-                <svg className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-green-400">Registration successful!</p>
-                  <p className="text-xs text-green-400/70 mt-1">You can now sign in with your account.</p>
+                  <p className="text-sm font-medium text-green-400">
+                    Registration successful!
+                  </p>
+                  <p className="text-xs text-green-400/70 mt-1">
+                    You can now sign in with your account.
+                  </p>
                 </div>
               </div>
             )}
@@ -228,14 +283,29 @@ export default function RegisterForm() {
               <span className="relative flex items-center justify-center gap-2">
                 {isLoading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <svg
+                      className="animate-spin h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     Creating account...
                   </>
                 ) : (
-                  "Create Account"
+                  'Create Account'
                 )}
               </span>
             </button>
@@ -243,18 +313,40 @@ export default function RegisterForm() {
 
           {/* Password requirements */}
           <div className="mt-4 p-4 rounded-lg bg-gray-800/30 border border-gray-700/50">
-            <p className="text-xs font-medium text-gray-300 mb-2">Password requirements:</p>
+            <p className="text-xs font-medium text-gray-300 mb-2">
+              Password requirements:
+            </p>
             <ul className="space-y-1 text-xs text-gray-400">
               <li className="flex items-center gap-2">
-                <span className={password.length >= 6 ? "text-green-400" : "text-gray-500"}>•</span>
+                <span
+                  className={
+                    password.length >= 6 ? 'text-green-400' : 'text-gray-500'
+                  }
+                >
+                  •
+                </span>
                 At least 6 characters
               </li>
               <li className="flex items-center gap-2">
-                <span className={/[A-Z]/.test(password) ? "text-green-400" : "text-gray-500"}>•</span>
+                <span
+                  className={
+                    /[A-Z]/.test(password) ? 'text-green-400' : 'text-gray-500'
+                  }
+                >
+                  •
+                </span>
                 One uppercase letter (recommended)
               </li>
               <li className="flex items-center gap-2">
-                <span className={/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password) ? "text-green-400" : "text-gray-500"}>•</span>
+                <span
+                  className={
+                    /[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)
+                      ? 'text-green-400'
+                      : 'text-gray-500'
+                  }
+                >
+                  •
+                </span>
                 One number or special character (recommended)
               </li>
             </ul>
@@ -264,7 +356,10 @@ export default function RegisterForm() {
         {/* Login link */}
         <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{' '}
-          <a href="/login" className="font-semibold text-teal-400 hover:text-teal-300 transition-colors">
+          <a
+            href="/login"
+            className="font-semibold text-teal-400 hover:text-teal-300 transition-colors"
+          >
             Sign in instead
           </a>
         </p>

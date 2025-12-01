@@ -1,8 +1,13 @@
 // src/firebase.ts
-import { initializeApp } from "firebase/app";
-import { FacebookAuthProvider, getAuth, GoogleAuthProvider, signInAnonymously } from "firebase/auth";
-import { getDatabase } from "firebase/database";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp } from 'firebase/app';
+import {
+  FacebookAuthProvider,
+  getAuth,
+  GoogleAuthProvider,
+  signInAnonymously,
+} from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -23,7 +28,7 @@ export const db = getDatabase(app);
 export const firestore = getFirestore(app);
 
 // Storage import hozzáadása
-import { getStorage } from "firebase/storage";
+import { getStorage } from 'firebase/storage';
 export const storage = getStorage(app);
 
 export const signInGuest = async () => {
@@ -31,7 +36,7 @@ export const signInGuest = async () => {
     const result = await signInAnonymously(auth);
     return result.user;
   } catch (error) {
-    console.error("Anonymous sign-in failed", error);
+    console.error('Anonymous sign-in failed', error);
     throw error;
   }
 };
