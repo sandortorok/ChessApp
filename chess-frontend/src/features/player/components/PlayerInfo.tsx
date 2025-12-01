@@ -13,7 +13,7 @@ interface PlayerInfoProps {
     losses?: number;
     draws?: number;
   } | null;
-  position?: 'top' | 'bottom'; // Controls modal direction (upwards/downwards)
+  position?: 'top' | 'bottom';
   startingElo?: number;
   currentElo?: number;
   eloChange?: number;
@@ -35,7 +35,6 @@ export default function PlayerInfo({
   const [openUpwards, setOpenUpwards] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Check if player is guest
   const isGuest = player?.uid?.startsWith('guest_');
 
   const handleClick = (e: React.MouseEvent) => {
@@ -49,7 +48,6 @@ export default function PlayerInfo({
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
 
-      // Decide if modal should open upwards
       const shouldOpenUpwards =
         position === 'bottom' ||
         (spaceBelow < dropdownHeight && spaceAbove > spaceBelow);
@@ -64,7 +62,6 @@ export default function PlayerInfo({
     setShowDropdown((prev) => !prev);
   };
 
-  // Prepare gameData for PlayerProfileModal
   const gameData =
     startingElo !== undefined && currentElo !== undefined
       ? {

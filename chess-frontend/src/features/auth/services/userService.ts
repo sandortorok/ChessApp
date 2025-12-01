@@ -21,9 +21,7 @@ class UserService {
     return UserService.instance;
   }
 
-  /**
-   * Létrehoz egy új felhasználói profilt Firestore-ban
-   */
+  /** Creates a new user profile in Firestore */
   async createUserProfile(user: User): Promise<UserProfile> {
     const userProfile: UserProfile = {
       uid: user.uid,
@@ -43,9 +41,7 @@ class UserService {
     return userProfile;
   }
 
-  /**
-   * Lekéri a felhasználó profilját, ha nem létezik, létrehozza
-   */
+  /** Gets user profile from Firestore, creates one if it doesn't exist */
   async getUserProfile(user: User): Promise<UserProfile> {
     const userRef = doc(firestore, 'users', user.uid);
     const userSnap = await getDoc(userRef);
@@ -53,14 +49,11 @@ class UserService {
     if (userSnap.exists()) {
       return userSnap.data() as UserProfile;
     } else {
-      // Ha nincs profil, létrehozunk egyet
       return await this.createUserProfile(user);
     }
   }
 
-  /**
-   * Frissíti a felhasználó ELO értékét
-   */
+  /** Updates user's ELO rating */
   async updateUserElo(uid: string, newElo: number): Promise<void> {
     const userRef = doc(firestore, 'users', uid);
     await updateDoc(userRef, {
@@ -69,9 +62,7 @@ class UserService {
     });
   }
 
-  /**
-   * Növeli a felhasználó győzelmeinek számát
-   */
+  /** Increments user's win count */
   async incrementWins(uid: string): Promise<void> {
     const userRef = doc(firestore, 'users', uid);
     await updateDoc(userRef, {
@@ -80,9 +71,7 @@ class UserService {
     });
   }
 
-  /**
-   * Növeli a felhasználó vereségeinek számát
-   */
+  /** Increments user's loss count */
   async incrementLosses(uid: string): Promise<void> {
     const userRef = doc(firestore, 'users', uid);
     await updateDoc(userRef, {
@@ -91,9 +80,7 @@ class UserService {
     });
   }
 
-  /**
-   * Növeli a felhasználó döntetlenjeinek számát
-   */
+  /** Increments user's draw count */
   async incrementDraws(uid: string): Promise<void> {
     const userRef = doc(firestore, 'users', uid);
     await updateDoc(userRef, {
@@ -115,9 +102,7 @@ class UserService {
     return Math.round(newElo);
   }
 
-  /**
-   * Frissíti mindkét játékos ELO-ját a játék eredménye alapján
-   */
+  /** Updates both players' ELO ratings and stats based on game result */
   async updatePlayersElo(
     winner: 'white' | 'black' | 'draw',
     whiteUid: string,
@@ -135,15 +120,12 @@ class UserService {
       whiteScore = 0;
       blackScore = 1;
     } else {
-      // draw
       whiteScore = 0.5;
       blackScore = 0.5;
     }
 
     const newWhiteElo = this.calculateNewElo(whiteElo, blackElo, whiteScore);
     const newBlackElo = this.calculateNewElo(blackElo, whiteElo, blackScore);
-
-    // Frissítjük az ELO értékeket és a statisztikákat
     await Promise.all([
       this.updateUserElo(whiteUid, newWhiteElo),
       this.updateUserElo(blackUid, newBlackElo),
@@ -167,10 +149,8 @@ class UserService {
   }
 }
 
-// Export singleton instance
 export const userService = UserService.getInstance();
 
-// Export backward compatible functions
 export const createUserProfile = (user: User) =>
   userService.createUserProfile(user);
 export const getUserProfile = (user: User) => userService.getUserProfile(user);

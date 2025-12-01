@@ -5,7 +5,8 @@ import type { Game } from '@/features/game';
 import { DEFAULT_GAME } from '../constants/gameDefaults';
 
 /**
- * Singleton service to manage game state
+ * Service managing game state through RxJS observables
+ * Provides reactive access to current game data and handles Firebase subscriptions
  */
 class GameStateService {
   private static instance: GameStateService | null = null;
@@ -36,7 +37,7 @@ class GameStateService {
     this.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
       const game: Game | null = snapshot.val();
       if (game) {
-        // realtime database doesn't save empty arrays, so we need to normalize
+        // Firebase Realtime Database doesn't persist empty arrays
         const normalizedGame: Game = {
           ...game,
           moves: game.moves ?? [],

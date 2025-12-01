@@ -16,7 +16,6 @@ export function useAuth() {
 
       if (firebaseUser) {
         try {
-          // Betöltjük vagy létrehozzuk a felhasználó profilját
           const profile = await getUserProfile(firebaseUser);
           setUserProfile(profile);
         } catch (error) {

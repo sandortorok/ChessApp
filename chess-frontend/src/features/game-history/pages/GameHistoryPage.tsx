@@ -114,7 +114,6 @@ export default function GameHistory() {
         )}
       </div>
 
-      {/* Profile Modal */}
       {profileDropdown && (
         <PlayerProfileModal
           player={profileDropdown.player}

@@ -25,12 +25,10 @@ export default function PlayerProfileModal({
   const [avatarURL, setAvatarURL] = useState<string>(DEFAULT_AVATAR);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Helper: check if player is guest (uid starts with "guest_")
   const isGuest = (player: any) => {
     return player?.uid?.startsWith('guest_');
   };
 
-  // Close modal when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -47,7 +45,6 @@ export default function PlayerProfileModal({
     };
   }, [onClose]);
 
-  // Load player avatar from Firestore
   useEffect(() => {
     const loadPlayerAvatar = async () => {
       if (player?.uid && !isGuest(player)) {
@@ -87,7 +84,6 @@ export default function PlayerProfileModal({
       }}
     >
       <div className="flex items-center gap-3 mb-3">
-        {/* Avatar */}
         <div className="w-12 h-12 rounded-full bg-emerald-600/20 flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
           {avatarURL.startsWith('emoji:') ? (
             <span className="text-2xl">{avatarURL.replace('emoji:', '')}</span>

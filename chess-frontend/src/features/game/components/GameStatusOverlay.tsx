@@ -33,7 +33,7 @@ const variantConfig: Record<
     bgGradient: 'from-teal-500 to-cyan-500',
     textGradient: 'from-teal-400 via-cyan-400 to-teal-400',
     icon: '📜',
-    title: 'Történet megtekintése',
+    title: 'Viewing History',
     animate: false,
   },
 };

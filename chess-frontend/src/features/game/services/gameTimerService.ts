@@ -1,6 +1,6 @@
 /**
- * Game Timer Service
- * Handles time calculations and timeout logic
+ * Service for managing game timers and time-related game logic
+ * Handles time calculations, increments, and timeout detection
  */
 
 import { ref, update } from 'firebase/database';
@@ -19,7 +19,11 @@ export class GameTimerService {
     return GameTimerService.instance;
   }
   /**
-   * Calculate time left after a move
+   * Calculates remaining time for both players after a move
+   * Applies time increment if configured
+   * @param gameData - Current game state
+   * @param playerWhoMoved - Color of the player who just moved
+   * @returns Updated time remaining for both players
    */
   calculateTimeLeft(gameData: Game, playerWhoMoved: PlayerColor): TimeLeft {
     const now = Date.now();
@@ -27,7 +31,6 @@ export class GameTimerService {
     const elapsed = gameData.status !== 'waiting' ? now - lastUpdate : 0;
     const newTimeLeft: TimeLeft = { ...gameData.timeLeft };
 
-    // Subtract elapsed time from the player who just moved
     if (gameData.status !== 'waiting') {
       newTimeLeft[playerWhoMoved] = Math.max(
         0,
@@ -41,7 +44,10 @@ export class GameTimerService {
   }
 
   /**
-   * Handle timeout - set time to 0 and end game
+   * Handles a timeout condition by ending the game
+   * @param gameId - Unique game identifier
+   * @param gameData - Current game state
+   * @param timeoutSide - Color of the player who ran out of time
    */
   async handleTimeout(
     gameId: string,
@@ -51,7 +57,6 @@ export class GameTimerService {
     const gameRef = ref(db, `games/${gameId}`);
     const winner = timeoutSide === 'white' ? 'black' : 'white';
 
-    // Set timeout player's time to 0
     const updatedTimeLeft = { ...gameData.timeLeft };
     updatedTimeLeft[timeoutSide] = 0;
 
@@ -64,5 +69,4 @@ export class GameTimerService {
   }
 }
 
-// Export singleton instance
 export const gameTimerService = GameTimerService.getInstance();

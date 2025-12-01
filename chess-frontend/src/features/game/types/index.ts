@@ -1,6 +1,5 @@
 import type { Player } from '@/features/player';
 
-// Re-export Player for convenience
 export type { Player };
 
 /** Chess square in algebraic notation (e.g., "e4", "a1") */
@@ -79,12 +78,12 @@ export type winReason =
   | 'draw'
   | 'resignation'
   | 'aggreement' // TODO: Fix typo → "agreement"
-  | 'aborted'; // No ELO changes
+  | 'aborted';
 
 export interface MoveHistoryType {
   from: string;
   to: string;
-  san: string; // Standard Algebraic Notation (e.g., "Nf3", "exd5")
+  san: string;
   fen: string;
   updatedAt: number;
   moveNumber: number;
@@ -101,15 +100,15 @@ export type Game = {
   status: Status;
   winner: Winner;
   winReason: winReason | null;
-  timeLeft: TimeLeft; // milliseconds
-  timeControl: number; // milliseconds
-  increment: number; // milliseconds
+  timeLeft: TimeLeft;
+  timeControl: number;
+  increment: number;
   opponentType: 'human' | 'ai';
   createdAt: number;
   updatedAt: number;
   startingElo?: PlayerElos;
   finalElo?: PlayerElos;
-  drawOfferedBy?: string | null; // UID of player who offered draw
+  drawOfferedBy?: string | null;
 };
 export type GameEndInfo = {
   status: Status;

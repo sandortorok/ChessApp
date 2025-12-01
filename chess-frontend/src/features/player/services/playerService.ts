@@ -1,36 +1,40 @@
-/**
- * Player Service
- * Handles player-related operations (joining games, user data)
- */
-
 import { ref, set, get, update } from 'firebase/database';
 import { doc, getDoc, type DocumentData } from 'firebase/firestore';
 import { db, firestore } from '@/lib/firebase/config';
 import type { User } from 'firebase/auth';
 import type { Game, Players } from '@/features/game/types/index';
 
-// Constants
 const DEFAULT_ELO = 1200;
 
+/**
+ * Service for managing player-related operations including joining games,
+ * retrieving player data, and managing game participation.
+ */
 export class PlayerService {
   private static instance: PlayerService | null = null;
 
   private constructor() {}
 
+  /**
+   * Gets the singleton instance of PlayerService.
+   */
   public static getInstance(): PlayerService {
     if (!PlayerService.instance) {
       PlayerService.instance = new PlayerService();
     }
     return PlayerService.instance;
   }
+
   /**
-   * Join a game as a player
+   * Attempts to join a player to a game.
+   * @param gameId - The ID of the game to join
+   * @param user - The user attempting to join
+   * @returns The side ('white' or 'black') the player joined as, or null if unable to join
    */
   async joinGame(
     gameId: string,
     user: User
   ): Promise<'white' | 'black' | null> {
-    // Lekérdezi a gameData-t
     const gameSnapshot = await get(ref(db, `games/${gameId}`));
     const gameData: Game = gameSnapshot.val();
 
@@ -38,13 +42,12 @@ export class PlayerService {
 
     const currentPlayers = gameData.players ?? { white: null, black: null };
 
-    // Check if already joined
     const alreadyJoined =
       currentPlayers.white?.uid === user.uid ||
       currentPlayers.black?.uid === user.uid;
 
     if (alreadyJoined) return null;
-    // Determine which side to join
+
     let sideToJoin: 'white' | 'black';
     if (!currentPlayers.white && !currentPlayers.black) {
       sideToJoin = Math.random() < 0.5 ? 'white' : 'black';
@@ -53,15 +56,14 @@ export class PlayerService {
     } else if (!currentPlayers.black) {
       sideToJoin = 'black';
     } else {
-      return null; // Game is full
+      return null;
     }
 
-    // Get player data from Firestore
     const userData = await this.getPlayerData(user.uid);
 
     const newPlayer = {
       uid: user.uid,
-      name: user.displayName || user.email, // Ezt használja a PlayerInfo komponens
+      name: user.displayName || user.email,
       displayName: user.displayName,
       email: user.email,
       elo: userData?.elo ?? DEFAULT_ELO,
@@ -72,7 +74,6 @@ export class PlayerService {
 
     await set(ref(db, `games/${gameId}/players/${sideToJoin}`), newPlayer);
 
-    // Save starting ELO for this player
     await update(ref(db, `games/${gameId}/startingElo`), {
       [sideToJoin]: userData?.elo ?? DEFAULT_ELO,
     });
@@ -85,7 +86,10 @@ export class PlayerService {
   }
 
   /**
-   * Get player's side in a game
+   * Gets the side (color) a player is playing as in a game.
+   * @param user - The user to check
+   * @param players - The players object from the game
+   * @returns The side ('white' or 'black') or null if not playing
    */
   getPlayerSide(user: User, players: Players): 'white' | 'black' | null {
     if (!user || !players) return null;
@@ -96,7 +100,10 @@ export class PlayerService {
   }
 
   /**
-   * Check if user is a player in the game
+   * Checks if a user is a player in the game.
+   * @param user - The user to check
+   * @param gameData - The game data
+   * @returns True if the user is a player, false otherwise
    */
   isPlayer(user: User, gameData: Game): boolean {
     if (!gameData.players) return false;
@@ -104,7 +111,10 @@ export class PlayerService {
   }
 
   /**
-   * Check if user is a spectator
+   * Checks if a user is a spectator in the game.
+   * @param user - The user to check
+   * @param gameData - The game data
+   * @returns True if the user is a spectator, false otherwise
    */
   isSpectator(user: User | null, gameData: Game | null): boolean {
     if (!user || !gameData) return false;
@@ -112,8 +122,9 @@ export class PlayerService {
   }
 
   /**
-   * Get player data from Firestore
-   * Returns player document data or null if user doesn't exist
+   * Retrieves player data from Firestore.
+   * @param uid - The user ID to look up
+   * @returns The player document data or null if the user doesn't exist
    */
   async getPlayerData(uid: string): Promise<DocumentData | null> {
     const playerRef = doc(firestore, 'users', uid);
@@ -126,7 +137,9 @@ export class PlayerService {
   }
 
   /**
-   * Check if both players have joined
+   * Checks if both players have joined the game.
+   * @param gameData - The game data
+   * @returns True if both white and black players are present
    */
   bothPlayersJoined(gameData: Game | null): boolean {
     if (!gameData?.players) return false;
@@ -134,7 +147,10 @@ export class PlayerService {
   }
 
   /**
-   * Get opponent data
+   * Gets the opponent's data for a given user.
+   * @param user - The user whose opponent to find
+   * @param gameData - The game data
+   * @returns The opponent's data or null if not found
    */
   getOpponent(
     user: User | null,
@@ -155,18 +171,19 @@ export class PlayerService {
   }
 
   /**
-   * Get player's remaining time
+   * Calculates the remaining time for a player.
+   * @param side - The side ('white' or 'black') to get time for
+   * @param gameData - The game data
+   * @returns The remaining time in milliseconds
    */
   getRemainingTime(side: 'white' | 'black', gameData: Game | null): number {
     if (!gameData || !gameData.timeLeft || !gameData.updatedAt) return 0;
 
-    // If game hasn't started, return initial time
     if (gameData.status === 'waiting') return gameData.timeLeft[side];
 
     const now = Date.now();
     const elapsed = now - gameData.updatedAt;
 
-    // Only decrease time for the current turn player
     if (side === gameData.turn) {
       return Math.max(0, gameData.timeLeft[side] - elapsed);
     } else {
@@ -175,7 +192,6 @@ export class PlayerService {
   }
 }
 
-// Export singleton instance
 export const playerService = PlayerService.getInstance();
 
 export default playerService;

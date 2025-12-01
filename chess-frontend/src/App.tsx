@@ -12,7 +12,7 @@ import { SettingsPage } from '@/features/settings';
 
 function App() {
   useEffect(() => {
-    document.title = import.meta.env.VITE_APP_TITLE; // vagy process.env.REACT_APP_TITLE
+    document.title = import.meta.env.VITE_APP_TITLE;
   }, []);
 
   return (

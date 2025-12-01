@@ -15,7 +15,6 @@ export function useGameSubscription(
   chessGame: Chess,
   onGameUpdate: (fen: string, from?: Square, to?: Square) => void
 ) {
-  // Create Firebase subscription
   useEffect(() => {
     if (!gameId) return;
 
@@ -26,10 +25,8 @@ export function useGameSubscription(
     };
   }, [gameId]);
 
-  // Subscribe to game changes via RxJS
   const gameData = useGamePropSelector((game) => game, DEFAULT_GAME);
 
-  // Sync chess game state when game data changes
   useEffect(() => {
     if (!gameData) return;
 

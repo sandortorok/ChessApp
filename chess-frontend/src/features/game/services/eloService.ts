@@ -1,6 +1,6 @@
 /**
- * ELO Service
- * Handles ELO calculations and Firestore updates
+ * Service for calculating ELO ratings and updating player statistics
+ * Implements the standard ELO rating system with K-factor of 32
  */
 
 import { doc, updateDoc, increment } from 'firebase/firestore';
@@ -21,7 +21,11 @@ export class EloService {
     return EloService.instance;
   }
   /**
-   * Calculate ELO change based on game outcome
+   * Calculates ELO rating changes for both players based on game outcome
+   * @param whiteElo - Current ELO rating of white player
+   * @param blackElo - Current ELO rating of black player
+   * @param winner - Game result: 'white', 'black', or 'draw'
+   * @returns Object containing ELO changes for both players
    */
   calculateEloChange(
     whiteElo: number,
@@ -44,14 +48,17 @@ export class EloService {
       return { whiteChange, blackChange };
     }
 
-    // winner === "black"
     const whiteChange = Math.round(K * (0 - expectedWhite));
     const blackChange = Math.round(K * (1 - expectedBlack));
     return { whiteChange, blackChange };
   }
 
   /**
-   * Update player stats in Firestore after game end
+   * Updates player statistics in Firestore after a game ends
+   * @param uid - User ID of the player
+   * @param isWinner - Whether the player won the game
+   * @param isDraw - Whether the game ended in a draw
+   * @param eloChange - ELO rating change (can be positive or negative)
    */
   async updatePlayerStats(
     uid: string,
@@ -80,7 +87,11 @@ export class EloService {
   }
 
   /**
-   * Update both players' ELO and stats in Firestore
+   * Updates ELO ratings and statistics for both players after a game
+   * @param whiteUid - User ID of white player
+   * @param blackUid - User ID of black player
+   * @param winner - Game result: 'white', 'black', or 'draw'
+   * @returns Object with ELO changes or null if player data unavailable
    */
   async updateBothPlayersElo(
     whiteUid: string,
@@ -127,7 +138,10 @@ export class EloService {
   }
 
   /**
-   * Save final ELO to game in Realtime Database
+   * Saves final ELO ratings to the game record in Realtime Database
+   * @param gameId - Unique game identifier
+   * @param whiteElo - Final ELO rating of white player
+   * @param blackElo - Final ELO rating of black player
    */
   async saveFinalEloToGame(
     gameId: string,
@@ -148,7 +162,10 @@ export class EloService {
   }
 
   /**
-   * Save starting ELO when both players joined
+   * Saves starting ELO ratings when both players have joined the game
+   * @param gameId - Unique game identifier
+   * @param whiteUid - User ID of white player
+   * @param blackUid - User ID of black player
    */
   async saveStartingElo(
     gameId: string,
@@ -179,5 +196,4 @@ export class EloService {
   }
 }
 
-// Export singleton instance
 export const eloService = EloService.getInstance();

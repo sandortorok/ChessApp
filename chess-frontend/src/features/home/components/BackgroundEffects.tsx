@@ -3,13 +3,11 @@ import { Crown } from 'lucide-react';
 export function BackgroundEffects() {
   return (
     <>
-      {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(16,185,129,0.15),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(16,185,129,0.15),transparent_50%)]" />
       </div>
 
-      {/* Floating chess pieces */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 opacity-10 animate-float text-white">
           <Crown size={64} />

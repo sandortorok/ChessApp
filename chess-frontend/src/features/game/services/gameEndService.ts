@@ -1,6 +1,6 @@
 /**
- * Game End Service
- * Handles game ending conditions, draw offers, surrender, and abort
+ * Service for managing game termination scenarios
+ * Handles checkmate, stalemate, draws, timeouts, resignations, and aborts
  */
 
 import { ref, update } from 'firebase/database';
@@ -30,7 +30,11 @@ export class GameEndService {
     return GameEndService.instance;
   }
   /**
-   * Check if game should end (checkmate, stalemate, draw, timeout)
+   * Checks if the game has reached an ending condition
+   * @param chessGame - Chess.js instance
+   * @param gameData - Current game state
+   * @param timeLeft - Remaining time for both players
+   * @returns Object with game status, winner, and reason for ending
    */
   checkGameEndConditions(
     chessGame: Chess,
@@ -42,21 +46,17 @@ export class GameEndService {
     let winReasonValue: winReason | null = null;
     const playerMoved = gameData.turn === 'white' ? 'black' : 'white';
 
-    // Check timeout
     if (timeLeft[playerMoved] === 0 && gameData.status !== 'waiting') {
       status = 'ended';
       winner = playerMoved;
       winReasonValue = 'timeout';
     }
 
-    // Check checkmate
     if (chessGame.isCheckmate()) {
       status = 'ended';
       winner = playerMoved;
       winReasonValue = 'checkmate';
-    }
-    // Check draw conditions
-    else if (this.getDrawReason(chessGame)) {
+    } else if (this.getDrawReason(chessGame)) {
       status = 'ended';
       winner = 'draw';
       winReasonValue = this.getDrawReason(chessGame);
@@ -66,7 +66,9 @@ export class GameEndService {
   }
 
   /**
-   * Determine draw reason
+   * Determines the specific reason for a draw if applicable
+   * @param chessGame - Chess.js instance
+   * @returns Specific draw reason or null if not a draw
    */
   getDrawReason(
     chessGame: Chess
@@ -84,7 +86,10 @@ export class GameEndService {
   }
 
   /**
-   * Update Firestore and Realtime Database on game end
+   * Finalizes a game by updating player statistics and ELO ratings
+   * @param gameId - Unique game identifier
+   * @param gameData - Current game state
+   * @param winner - Game result: 'white', 'black', or 'draw'
    */
   async finalizeGameEnd(
     gameId: string,
@@ -100,7 +105,6 @@ export class GameEndService {
     }
 
     try {
-      // Get current ELO values
       const [whiteData, blackData] = await Promise.all([
         playerService.getPlayerData(whiteUid),
         playerService.getPlayerData(blackUid),
@@ -111,7 +115,6 @@ export class GameEndService {
         return;
       }
 
-      // Update both players' ELO and stats
       const result = await eloService.updateBothPlayersElo(
         whiteUid,
         blackUid,
@@ -125,7 +128,6 @@ export class GameEndService {
 
       const { whiteChange, blackChange } = result;
 
-      // Save final ELO to game
       const finalElo = {
         white: whiteData.elo + whiteChange,
         black: blackData.elo + blackChange,
@@ -142,7 +144,9 @@ export class GameEndService {
   }
 
   /**
-   * Handle draw offer
+   * Sends a draw offer from one player to their opponent
+   * @param gameId - Unique game identifier
+   * @param userId - User ID of the player offering the draw
    */
   async offerDraw(gameId: string, userId: string): Promise<void> {
     const gameRef = ref(db, `games/${gameId}`);
@@ -152,7 +156,9 @@ export class GameEndService {
   }
 
   /**
-   * Accept draw offer
+   * Accepts a draw offer and ends the game as a draw
+   * @param gameId - Unique game identifier
+   * @param gameData - Current game state
    */
   async acceptDraw(gameId: string, gameData: Game): Promise<void> {
     const gameRef = ref(db, `games/${gameId}`);
@@ -168,7 +174,8 @@ export class GameEndService {
   }
 
   /**
-   * Decline draw offer
+   * Declines a draw offer and continues the game
+   * @param gameId - Unique game identifier
    */
   async declineDraw(gameId: string): Promise<void> {
     const gameRef = ref(db, `games/${gameId}`);
@@ -178,7 +185,9 @@ export class GameEndService {
   }
 
   /**
-   * Abort game (only first 0-1 moves)
+   * Aborts a game without affecting player statistics
+   * Should only be used in the first few moves
+   * @param gameId - Unique game identifier
    */
   async abortGame(gameId: string): Promise<void> {
     const gameRef = ref(db, `games/${gameId}`);
@@ -193,7 +202,10 @@ export class GameEndService {
   }
 
   /**
-   * Surrender game
+   * Handles a player's surrender (resignation)
+   * @param gameId - Unique game identifier
+   * @param gameData - Current game state
+   * @param surrenderingSide - Color of the player who is surrendering
    */
   async surrenderGame(
     gameId: string,
@@ -213,5 +225,4 @@ export class GameEndService {
   }
 }
 
-// Export singleton instance
 export const gameEndService = GameEndService.getInstance();

@@ -14,7 +14,6 @@ export default function ProfileInfoSection({
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Update displayName when user prop changes
   useEffect(() => {
     if (user?.displayName) {
       setDisplayName(user.displayName);
@@ -50,7 +49,6 @@ export default function ProfileInfoSection({
       </div>
 
       <div className="divide-y divide-emerald-600/20">
-        {/* Full Name */}
         <div className="px-6 py-6 hover:bg-slate-700/30 transition-colors">
           <label className="text-sm font-medium text-emerald-300 mb-3 block">
             Full Name
@@ -97,7 +95,6 @@ export default function ProfileInfoSection({
           </div>
         </div>
 
-        {/* Email Address */}
         <div className="px-6 py-6 hover:bg-slate-700/30 transition-colors">
           <label className="text-sm font-medium text-emerald-300 mb-3 block">
             Email Address

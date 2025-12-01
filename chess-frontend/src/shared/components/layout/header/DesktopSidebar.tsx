@@ -18,15 +18,12 @@ export default function DesktopSidebar({
 }: DesktopSidebarProps) {
   return (
     <aside className="hidden lg:flex lg:flex-col w-64 bg-slate-800/60 backdrop-blur-lg border-r border-emerald-600/30 shadow-lg sticky top-0 h-screen">
-      {/* Logo */}
       <div className="p-6 border-b border-emerald-600/30">
         <Logo />
       </div>
 
-      {/* Navigation */}
       <NavigationLinks items={navigation} variant="desktop" />
 
-      {/* User section */}
       <div className="p-4 border-t border-emerald-600/30">
         <UserSection
           user={user}

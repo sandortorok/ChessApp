@@ -17,7 +17,6 @@ export default function PlayerInfoWithClock({
   const { user: currentUser } = useAuth();
   const gameData = useGamePropSelector((game) => game, DEFAULT_GAME);
 
-  // Get all player data for the position
   const {
     player,
     playerColor,
@@ -28,7 +27,6 @@ export default function PlayerInfoWithClock({
     active,
   } = getPlayerInfoForPosition(currentUser, gameData, position);
 
-  // Handle time expiration - delegated to service
   async function handleTimeExpired() {
     if (!gameId || !gameData || gameData.status === 'ended') return;
 

@@ -12,7 +12,7 @@ export default function MoveHistory({
   onGoToLatest,
 }: Props) {
   const moveHistory = useGamePropSelector((game) => game.moves, []);
-  // Lépések párokba rendezése (fehér-fekete)
+
   const movePairs: Array<{
     white?: MoveHistoryType;
     black?: MoveHistoryType;

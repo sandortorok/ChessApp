@@ -83,7 +83,6 @@ export default function GameEndModal({
 
   const getResultMessage = () => {
     if (winner === 'draw') {
-      // Ha aborted, speciális üzenet
       if (winReason === 'aborted') {
         return 'Game Aborted';
       }

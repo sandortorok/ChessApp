@@ -7,8 +7,8 @@ interface CreateGameModalProps {
 }
 
 export interface GameSettings {
-  timeControl: number; // percben
-  increment: number; // másodpercben
+  timeControl: number;
+  increment: number;
   opponentType: 'human' | 'ai';
 }
 
@@ -32,7 +32,7 @@ export default function CreateGameModal({
 }: CreateGameModalProps) {
   const [selectedTimeControl, setSelectedTimeControl] = useState(
     timeControlOptions[4]
-  ); // 5+0 alapértelmezett
+  );
   const [opponentType, setOpponentType] = useState<'human' | 'ai'>('human');
 
   if (!isOpen) return null;
@@ -58,12 +58,11 @@ export default function CreateGameModal({
       onClick={handleBackdropClick}
     >
       <div className="bg-slate-800 rounded-2xl border border-emerald-600/30 shadow-2xl shadow-emerald-500/20 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="border-b border-emerald-600/30 px-6 py-5">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <span className="text-3xl">⚙️</span>
-              Új játék létrehozása
+              <span className="text-3xl">⚠️</span>
+              Create New Game
             </h2>
             <button
               onClick={onClose}
@@ -86,9 +85,7 @@ export default function CreateGameModal({
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Időkontroll választás */}
           <div>
             <label className="block text-emerald-300 font-semibold mb-3 flex items-center gap-2">
               <svg
@@ -104,7 +101,7 @@ export default function CreateGameModal({
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Időkontroll
+              Time Control
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {timeControlOptions.map((option) => (
@@ -122,12 +119,11 @@ export default function CreateGameModal({
               ))}
             </div>
             <p className="text-emerald-300/60 text-sm mt-3">
-              {selectedTimeControl.time} perc + {selectedTimeControl.increment}{' '}
-              másodperc lépésenként
+              {selectedTimeControl.time} minutes +{' '}
+              {selectedTimeControl.increment} seconds per move
             </p>
           </div>
 
-          {/* Ellenfél típus választás */}
           <div>
             <label className="block text-emerald-300 font-semibold mb-3 flex items-center gap-2">
               <svg
@@ -143,7 +139,7 @@ export default function CreateGameModal({
                   d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
-              Ellenfél típusa
+              Opponent Type
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -156,9 +152,9 @@ export default function CreateGameModal({
               >
                 <div className="relative z-10">
                   <div className="text-3xl mb-2">👤</div>
-                  <div className="text-lg">Ember</div>
+                  <div className="text-lg">Human</div>
                   <div className="text-xs opacity-70 mt-1">
-                    Játék másik játékos ellen
+                    Play against another player
                   </div>
                 </div>
                 {opponentType === 'human' && (
@@ -178,7 +174,7 @@ export default function CreateGameModal({
                   <div className="text-3xl mb-2">🤖</div>
                   <div className="text-lg">AI</div>
                   <div className="text-xs opacity-70 mt-1">
-                    Játék gépi ellenfél ellen
+                    Play against computer
                   </div>
                 </div>
                 {opponentType === 'ai' && (
@@ -189,13 +185,12 @@ export default function CreateGameModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-emerald-600/30 px-6 py-4 flex gap-3 justify-end">
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-emerald-300 hover:text-white font-semibold rounded-lg border border-slate-600 hover:border-emerald-600/50 transition-all duration-200"
           >
-            Mégse
+            Cancel
           </button>
           <button
             onClick={handleCreate}
@@ -216,7 +211,7 @@ export default function CreateGameModal({
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Játék létrehozása
+              Create Game
             </span>
           </button>
         </div>

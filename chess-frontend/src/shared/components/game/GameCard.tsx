@@ -53,7 +53,6 @@ export function GameCard({
       }`}
       onClick={handleCardClick}
     >
-      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <img
@@ -89,7 +88,6 @@ export function GameCard({
         )}
       </div>
 
-      {/* Players */}
       <div className="space-y-3">
         <PlayerSlot
           player={game.players?.white}
@@ -128,7 +126,6 @@ export function GameCard({
         />
       </div>
 
-      {/* Join/Spectate Button */}
       {showJoinButton && onCardClick && (
         <button
           onClick={(e) => {

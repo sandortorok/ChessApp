@@ -21,7 +21,7 @@ export default function ChatBox() {
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Guest';
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const gameId = useObservable(gameStateService.gameId$, null);
-  // Üzenetek betöltése
+
   useEffect(() => {
     if (!gameId) return;
 
@@ -34,7 +34,6 @@ export default function ChatBox() {
           id: key,
           ...data[key],
         }));
-        // Időbélyeg szerint rendezés
         messageList.sort((a, b) => a.timestamp - b.timestamp);
         setMessages(messageList);
       } else {
@@ -44,7 +43,7 @@ export default function ChatBox() {
 
     return () => off(messagesRef);
   }, [gameId]);
-  // Auto-scroll az új üzenetekhez - csak a chat konténeren belül
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth',
@@ -79,7 +78,6 @@ export default function ChatBox() {
 
   return (
     <div className="backdrop-blur-xl bg-gray-900/40 rounded-xl border border-teal-500/30 overflow-hidden flex flex-col h-full w-full max-w-full min-w-[400px] shrink-0">
-      {/* Header */}
       <div className="px-4 py-3 bg-gray-900/60 border-b border-teal-500/30 flex-shrink-0 min-w-0">
         <div className="flex items-center gap-2 text-teal-300">
           <svg
@@ -95,15 +93,14 @@ export default function ChatBox() {
               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
             />
           </svg>
-          <span className="text-sm font-semibold">Csevegés</span>
+          <span className="text-sm font-semibold">Chat</span>
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1.5 min-h-0 w-full">
         {messages.length === 0 ? (
           <div className="text-center text-slate-400 text-xs py-4">
-            Még nincsenek üzenetek. Kezdj el beszélgetni!
+            No messages yet. Start chatting!
           </div>
         ) : (
           messages.map((message) => (
@@ -119,7 +116,7 @@ export default function ChatBox() {
                 }`}
               >
                 <div className="text-[10px] opacity-70 mb-0.5">
-                  {isMyMessage(message) ? 'Te' : message.senderName}
+                  {isMyMessage(message) ? 'You' : message.senderName}
                 </div>
                 <div className="text-xs break-words">{message.text}</div>
                 <div className="text-[10px] opacity-50 mt-0.5 text-right">
@@ -135,7 +132,6 @@ export default function ChatBox() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <form
         onSubmit={handleSendMessage}
         className="p-2 bg-gray-900/60 border-t border-teal-500/30 flex-shrink-0 min-w-0"
@@ -145,7 +141,7 @@ export default function ChatBox() {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Írj üzenetet..."
+            placeholder="Type a message..."
             className="flex-1 min-w-0 bg-slate-800/50 text-slate-200 placeholder-slate-500 px-2 py-1.5 rounded-lg border border-slate-600/40 focus:border-teal-500/50 focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-xs transition-all"
             maxLength={200}
           />

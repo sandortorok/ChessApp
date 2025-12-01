@@ -36,8 +36,8 @@ export default function Lobby() {
             ...g,
           };
         })
-        .filter((g) => g.status === 'waiting' || g.status === 'ongoing') // Csak aktív játékok
-        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Legfrissebb elől
+        .filter((g) => g.status === 'waiting' || g.status === 'ongoing')
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       setGames(list);
       setLoading(false);
       console.log('Fetched active games:', list);
@@ -132,7 +132,6 @@ export default function Lobby() {
         )}
       </div>
 
-      {/* Profile Modal */}
       {profileDropdown && (
         <PlayerProfileModal
           player={profileDropdown.player}

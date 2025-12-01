@@ -36,10 +36,10 @@ async function createNewGame(
   gameId: string,
   settings: GameSettings
 ): Promise<void> {
-  const timeControl = settings?.timeControl || 5; // minutes
-  const increment = settings?.increment || 0; // seconds
+  const timeControl = settings?.timeControl || 5;
+  const increment = settings?.increment || 0;
   const opponentType = settings?.opponentType || 'human';
-  const initialTime = timeControl * 60 * 1000; // Convert to milliseconds
+  const initialTime = timeControl * 60 * 1000;
   const initialGame = {
     moves: [],
     fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',

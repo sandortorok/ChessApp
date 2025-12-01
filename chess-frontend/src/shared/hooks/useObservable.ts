@@ -9,7 +9,7 @@ export function useObservable<T>(
 
   useEffect(() => {
     const subscription = observable$.subscribe(setValue);
-    return () => subscription.unsubscribe(); // Cleanup
+    return () => subscription.unsubscribe();
   }, [observable$]);
 
   return value;

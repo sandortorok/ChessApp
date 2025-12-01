@@ -1,7 +1,7 @@
 import type { Game } from '../types';
 
 export const DEFAULT_GAME: Game = {
-  fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', // Kezdő pozíció
+  fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   moves: [],
   lastMove: null,
   players: null,

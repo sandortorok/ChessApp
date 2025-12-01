@@ -23,7 +23,7 @@ export default function ChessGame() {
   const gameSettings = (location.state as { gameSettings: GameSettings })
     ?.gameSettings;
 
-  const chessGame = useRef(new Chess()).current; // used to validate moves
+  const chessGame = useRef(new Chess()).current;
 
   const [chessPosition, setChessPosition] = useState(chessGame.fen());
   const [lastMoveSquares, setLastMoveSquares] = useState<{
@@ -36,10 +36,7 @@ export default function ChessGame() {
     null
   );
 
-  // Create game if not exists
   useGameInitializer(gameId, gameSettings, currentUser);
-
-  // Join game if not already joined
   useEffect(() => {
     if (!gameId || !currentUser) return;
 
@@ -48,10 +45,8 @@ export default function ChessGame() {
       .catch((error) => console.error('Error joining game:', error));
   }, [gameId, currentUser]);
 
-  // Subscribe to game updates and sync chess state
   const { gameData } = useGameSubscription(gameId, chessGame, renderMove);
 
-  // Chess game logic and interactions
   const { optionSquares, onSquareClick, onPieceDrop, clearSelection } =
     useChessGameLogic(
       chessGame,
@@ -90,7 +85,6 @@ export default function ChessGame() {
     renderMove(gameData.fen, gameData.lastMove?.from, gameData.lastMove?.to);
   }
 
-  // Game layout helpers
   const boardOrientation = getBoardOrientation(currentUser, gameData);
 
   const combinedSquareStyles = {
@@ -108,11 +102,8 @@ export default function ChessGame() {
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-teal-950 to-gray-900 min-w-full flex flex-col">
         <GameBackgroundDecoration />
         <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row lg:h-screen gap-4 p-3 lg:p-4">
-          {/* Bal oszlop: PlayerInfo - Chessboard - PlayerInfo */}
           <div className="flex flex-col lg:flex-[2] gap-3">
-            {/* Felső játékos */}
             <PlayerInfoWithClock position="top" />
-            {/* Sakktábla */}
             <ChessboardWrapper
               position={chessPosition}
               onSquareClick={onSquareClick}
@@ -122,12 +113,9 @@ export default function ChessGame() {
               viewingHistoryIndex={viewingHistoryIndex}
               gameData={gameData}
             />
-            {/* Alsó játékos */}
             <PlayerInfoWithClock position="bottom" />
           </div>
-          {/* Jobb oszlop: ViewHistory - Gombok - ChatBox */}
           <div className="flex flex-col lg:flex-1 gap-3 w-full lg:w-auto">
-            {/* Lépéstörténet */}
             <div className="flex-1 min-h-0">
               <MoveHistory
                 viewingHistoryIndex={viewingHistoryIndex}
@@ -136,7 +124,6 @@ export default function ChessGame() {
               />
             </div>
             <GameActionButtons />
-            {/* Chat Box */}
             <div className="flex-1 min-h-0">
               <ChatBox />
             </div>

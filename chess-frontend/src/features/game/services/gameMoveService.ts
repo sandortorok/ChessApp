@@ -1,6 +1,6 @@
 /**
- * Game Move Service
- * Handles chess moves and game state updates
+ * Service for processing chess moves and synchronizing game state with Firebase
+ * Handles move validation, game state updates, and end-game detection
  */
 
 import { ref, update, get } from 'firebase/database';
@@ -22,7 +22,11 @@ export class GameMoveService {
     return GameMoveService.instance;
   }
   /**
-   * Execute a chess move
+   * Executes a chess move using chess.js library
+   * @param chessGame - Chess.js instance
+   * @param sourceSquare - Starting square in algebraic notation (e.g., 'e2')
+   * @param targetSquare - Target square in algebraic notation (e.g., 'e4')
+   * @returns Move object if valid, null if invalid
    */
   move(
     chessGame: Chess,
@@ -40,7 +44,7 @@ export class GameMoveService {
   }
 
   /**
-   * Create a new move history element
+   * Creates a move history entry with position and timing information
    */
   private createMoveHistoryElement(
     gameData: Game,
@@ -63,7 +67,7 @@ export class GameMoveService {
   }
 
   /**
-   * Build update payload for Firebase
+   * Builds the update payload for Firebase with all changed game properties
    */
   private buildUpdatePayload(
     fen: string,
@@ -94,7 +98,13 @@ export class GameMoveService {
   }
 
   /**
-   * Update game state in Firebase after a move
+   * Updates game state in Firebase after a move is executed
+   * Calculates time remaining, checks for game-ending conditions, and finalizes if needed
+   * @param gameId - Unique game identifier
+   * @param gameData - Current game state
+   * @param chessGame - Chess.js instance with the new position
+   * @param newFen - FEN string of the new position
+   * @param move - Move object from chess.js
    */
   async updateGameInDb(
     gameId: string,
@@ -103,8 +113,7 @@ export class GameMoveService {
     newFen: string,
     move: Move
   ): Promise<void> {
-    // chessGame.turn() returns the NEXT player (after the move)
-    // So the player who just moved is the opposite
+    // chess.js turn() returns the next player to move, so we invert to get who just moved
     const playerWhoMoved = chessGame.turn() === 'w' ? 'black' : 'white';
 
     const newTimeLeft = gameTimerService.calculateTimeLeft(
@@ -151,7 +160,9 @@ export class GameMoveService {
   }
 
   /**
-   * Check if game exists in database
+   * Checks if a game exists in the database
+   * @param gameId - Unique game identifier
+   * @returns True if game exists, false otherwise
    */
   async gameExists(gameId: string): Promise<boolean> {
     const gameRef = ref(db, `games/${gameId}`);
@@ -160,5 +171,4 @@ export class GameMoveService {
   }
 }
 
-// Export singleton instance
 export const gameMoveService = GameMoveService.getInstance();

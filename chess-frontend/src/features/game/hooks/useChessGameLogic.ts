@@ -44,24 +44,21 @@ export function useChessGameLogic(
   const onSquareClick = useCallback(
     ({ square, piece }: SquareHandlerArgs) => {
       if (!canMove() || viewingHistoryIndex !== null) return;
-      if (piece && !isMyPiece(square as Square)) return;
+      if (!isMyPiece(square as Square)) return;
       if (moveFrom && !isMyPiece(moveFrom)) return;
 
-      // Deselect piece
       if (moveFrom === square) {
         setMoveFrom('');
         setOptionSquares({});
         return;
       }
 
-      // Select piece
       if (!moveFrom && piece) {
         const has = getMoveOptions(square as Square);
         if (has) setMoveFrom(square as Square);
         return;
       }
 
-      // Try to make move
       try {
         const move = chessGame.move({
           from: moveFrom as Square,

@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 
 interface ChessClockProps {
-  initialTime?: number; // milliszekundumban
+  initialTime?: number;
   active?: boolean;
-  onTimeExpired?: () => void; // Callback amikor lejár az idő
+  onTimeExpired?: () => void;
 }
 
 const ChessClock = ({
@@ -16,7 +16,6 @@ const ChessClock = ({
   const startTimeRef = useRef<number | null>(null);
   const remainingTimeRef = useRef(initialTime);
 
-  // Frissítjük a clockot, ha a prop változik
   useEffect(() => {
     setTime(initialTime);
     remainingTimeRef.current = initialTime;
@@ -24,35 +23,30 @@ const ChessClock = ({
   }, [initialTime]);
 
   useEffect(() => {
-    // Töröljük a korábbi intervallumot
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    // Ha nem aktív, mentsük el a jelenlegi időt és álljunk meg
     if (!active) {
       remainingTimeRef.current = time;
       startTimeRef.current = null;
       return;
     }
 
-    // Amikor újra aktív lesz, állítsuk be a kezdési időpontot
     startTimeRef.current = Date.now();
     const baseTime = remainingTimeRef.current;
 
-    // Új intervallum indítása (100ms-enként a smooth animációhoz)
+    // Update every 100ms for smooth animation
     intervalRef.current = window.setInterval(() => {
       if (!startTimeRef.current) return;
 
-      // Számítsuk ki, hogy ténylegesen mennyi idő telt el
       const elapsed = Date.now() - startTimeRef.current;
       const newTime = Math.max(0, baseTime - elapsed);
 
       setTime(newTime);
       remainingTimeRef.current = newTime;
 
-      // Ha lejárt az idő, hívjuk meg a callback-et
       if (newTime === 0 && baseTime > 0 && onTimeExpired) {
         onTimeExpired();
       }
@@ -63,9 +57,7 @@ const ChessClock = ({
           intervalRef.current = null;
         }
       }
-    }, 100); // 100ms-enként frissít
-
-    // Cleanup: töröljük az intervallumot, amikor a komponens unmountol vagy az active változik
+    }, 100);
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

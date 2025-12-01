@@ -23,7 +23,6 @@ export default function GameActionButtons() {
   const [prevStatus, setPrevStatus] = useState(gameData.status);
   const [gameId, setGameId] = useState<string | null>(null);
 
-  // Subscribe to game ID
   useEffect(() => {
     const subscription = gameStateService.gameId$.subscribe((id) => {
       setGameId(id);
@@ -32,7 +31,6 @@ export default function GameActionButtons() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Show game end modal
   useEffect(() => {
     if (!gameData) return;
     if (
@@ -45,7 +43,6 @@ export default function GameActionButtons() {
     setPrevStatus(gameData.status);
   }, [gameData.status, showEndModal, prevStatus]);
 
-  // Listen for draw offers
   useEffect(() => {
     if (!gameData || !currentUser) return;
 

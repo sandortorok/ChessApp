@@ -18,7 +18,6 @@ export default function AvatarSection({
 
       <div className="px-6 py-6">
         <div className="flex items-center gap-6">
-          {/* Current Avatar */}
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-slate-700 border-2 border-emerald-500/30 overflow-hidden flex items-center justify-center">
               {avatarURL.startsWith('emoji:') ? (
@@ -31,7 +30,6 @@ export default function AvatarSection({
             </div>
           </div>
 
-          {/* Avatar Actions */}
           <div className="flex-1">
             <button
               onClick={onChangeClick}

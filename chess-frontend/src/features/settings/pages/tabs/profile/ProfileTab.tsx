@@ -18,7 +18,6 @@ import {
   SuccessMessage,
 } from './components';
 
-// Előre definiált avatar opciók
 const AVATAR_OPTIONS = [
   '👤',
   '🧑',
@@ -56,12 +55,10 @@ export default function ProfileTab() {
   const [user, setUser] = useState<User | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Avatar state
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarURL, setAvatarURL] = useState<string>('');
 
-  // Settings state
   const [settings, setSettings] = useState<UserSettings>({
     boardTheme: 'classic',
     soundEnabled: true,
@@ -74,14 +71,12 @@ export default function ProfileTab() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Load user settings from Firestore
         const userDocRef = doc(firestore, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const data = userDoc.data();
 
-          // Load avatar from Firestore (may be emoji: format)
           if (data.photoURL) {
             setAvatarURL(data.photoURL);
           } else if (firebaseUser.photoURL) {
@@ -115,7 +110,6 @@ export default function ProfileTab() {
 
     try {
       await updateProfile(user, { displayName });
-      // Force refresh the user object to reflect the updated displayName
       setUser({ ...user, displayName });
       showMessage('Name updated successfully!');
     } catch (error) {
@@ -129,17 +123,13 @@ export default function ProfileTab() {
 
     setUploadingAvatar(true);
     try {
-      // Store emoji as photoURL with a special prefix
       const photoURL = `emoji:${emoji}`;
 
-      // Save to Firestore only (don't update Firebase Auth profile)
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, { photoURL }, { merge: true });
 
-      // Update local state immediately
       setAvatarURL(photoURL);
 
-      // Dispatch custom event to notify other components
       window.dispatchEvent(
         new CustomEvent('avatarUpdated', { detail: { photoURL } })
       );

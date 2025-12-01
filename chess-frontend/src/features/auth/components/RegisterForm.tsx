@@ -40,7 +40,6 @@ export default function RegisterForm() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       setSuccess(true);
-      // Clear form
       setEmail('');
       setPassword('');
       setConfirmPassword('');

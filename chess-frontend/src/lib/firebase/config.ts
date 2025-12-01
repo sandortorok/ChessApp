@@ -1,4 +1,3 @@
-// src/firebase.ts
 import { initializeApp } from 'firebase/app';
 import {
   FacebookAuthProvider,
@@ -27,7 +26,6 @@ export const facebookProvider = new FacebookAuthProvider();
 export const db = getDatabase(app);
 export const firestore = getFirestore(app);
 
-// Storage import hozzáadása
 import { getStorage } from 'firebase/storage';
 export const storage = getStorage(app);
 

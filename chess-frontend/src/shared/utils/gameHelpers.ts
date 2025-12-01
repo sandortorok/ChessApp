@@ -1,9 +1,7 @@
-/** Guest players have UIDs starting with "guest_" */
 export function isGuest(player: any): boolean {
   return player?.uid?.startsWith('guest_');
 }
 
-/** Formats timestamp as "5m ago", "3h ago", "2d ago" */
 export function formatTimeAgo(timestamp: number): string {
   const now = Date.now();
   const diff = now - timestamp;
@@ -18,7 +16,6 @@ export function formatTimeAgo(timestamp: number): string {
   return `${seconds}s ago`;
 }
 
-/** Fallback chain: name → displayName → email → "Guest" → "Waiting" */
 export function getPlayerDisplayName(player: any): string {
   if (!player) return 'Waiting';
   return (
@@ -29,7 +26,6 @@ export function getPlayerDisplayName(player: any): string {
   );
 }
 
-/** Priority: finalElo → startingElo → player.elo → 1200 */
 export function getPlayerElo(
   player: any,
   gameData?: any,
@@ -45,7 +41,6 @@ export function getPlayerElo(
   return player.elo || 1200;
 }
 
-/** Returns null if game not ended or ELO data missing */
 export function getEloChange(
   gameData: any,
   playerColor: 'white' | 'black'

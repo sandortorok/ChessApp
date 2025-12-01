@@ -25,7 +25,6 @@ export default function GamePreferencesSection({
       </div>
 
       <div className="divide-y divide-emerald-600/20">
-        {/* Board Theme */}
         <div className="px-6 py-6 hover:bg-slate-700/30 transition-colors">
           <label className="text-sm font-medium text-emerald-300 mb-3 block">
             Board Theme
@@ -42,7 +41,6 @@ export default function GamePreferencesSection({
           </select>
         </div>
 
-        {/* Sound Settings */}
         <div className="px-6 py-6 hover:bg-slate-700/30 transition-colors">
           <label className="text-sm font-medium text-emerald-300 mb-3 block">
             Sound Effects

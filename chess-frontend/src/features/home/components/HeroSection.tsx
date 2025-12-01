@@ -12,7 +12,6 @@ export function HeroSection({
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-20">
       <div className="max-w-5xl mx-auto text-center">
-        {/* Main heading */}
         <div className="mb-8">
           <h1 className="text-7xl md:text-8xl lg:text-9xl font-bold mb-6">
             <span className="inline-block bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-400 bg-clip-text animate-gradient">
@@ -25,7 +24,6 @@ export function HeroSection({
           </p>
         </div>
 
-        {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
           <button
             onClick={onCreateGame}

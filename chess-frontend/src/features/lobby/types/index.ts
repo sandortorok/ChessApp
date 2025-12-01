@@ -1,5 +1,5 @@
 export interface GameSettings {
-  timeControl: number; // minutes
-  increment: number; // seconds
+  timeControl: number;
+  increment: number;
   opponentType: 'human' | 'ai';
 }

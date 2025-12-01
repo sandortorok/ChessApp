@@ -27,7 +27,6 @@ export default function Header() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
-      // Load avatar from Firestore
       if (firebaseUser) {
         const userDocRef = doc(firestore, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
@@ -51,7 +50,6 @@ export default function Header() {
       }
     });
 
-    // Listen for avatar updates from other components
     const handleAvatarUpdate = (event: Event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.photoURL) {
