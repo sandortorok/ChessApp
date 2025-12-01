@@ -34,3 +34,7 @@ dist-ssr
 .env.test.local
 *.env
 !.env.example
+
+# Unused/incomplete services - not yet implemented
+src/features/game/services/lichessService.ts
+src/features/game/services/aiGameService.ts

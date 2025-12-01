@@ -33,10 +33,7 @@ export class PlayerService {
       currentPlayers.white?.uid === user.uid ||
       currentPlayers.black?.uid === user.uid;
 
-    if (alreadyJoined) {
-      return null;
-    }
-
+    if (alreadyJoined) return null;
     // Determine which side to join
     let sideToJoin: 'white' | 'black';
     if (!currentPlayers.white && !currentPlayers.black) {

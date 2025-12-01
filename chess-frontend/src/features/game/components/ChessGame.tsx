@@ -1,8 +1,7 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import { useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
-import type { PieceDropHandlerArgs, SquareHandlerArgs } from 'react-chessboard';
 import type { Square } from '../types/index';
 import MoveHistory from './MoveHistory';
 import { ChatBox } from '@/features/chat';
@@ -11,12 +10,11 @@ import ChessboardWrapper from './ChessboardWrapper';
 import GameActionButtons from './GameActionButtons';
 import { GameBackgroundDecoration } from './GameBackgroundDecoration';
 import type { GameSettings } from '@/features/lobby';
-import { gameService } from '../services/gameService';
 import { playerService } from '@/features/player/services/playerService';
 import { useGameInitializer } from '../hooks/useGameInitializer';
+import { useGameSubscription } from '../hooks/useGameSubscription';
+import { useChessGameLogic } from '../hooks/useChessGameLogic';
 import { getBoardOrientation } from '../utils/gameLayoutHelpers';
-import { gameStateManagementService } from '../services/gameStateManagement';
-import { useGamePropSelector, DEFAULT_GAME } from '..';
 
 /** Main chess game component handling game logic, UI, and Firebase synchronization */
 export default function ChessGame() {
@@ -25,14 +23,9 @@ export default function ChessGame() {
   const gameSettings = (location.state as { gameSettings: GameSettings })
     ?.gameSettings;
 
-  const chessGameRef = useRef(new Chess());
-  const chessGame = chessGameRef.current;
-  // const [gameData, setGameData] = useState<Game | null>(null);
+  const chessGame = useRef(new Chess()).current; // used to validate moves
+
   const [chessPosition, setChessPosition] = useState(chessGame.fen());
-  const [moveFrom, setMoveFrom] = useState<'' | Square>('');
-  const [optionSquares, setOptionSquares] = useState<
-    Record<string, React.CSSProperties>
-  >({});
   const [lastMoveSquares, setLastMoveSquares] = useState<{
     from: Square;
     to: Square;
@@ -55,152 +48,20 @@ export default function ChessGame() {
       .catch((error) => console.error('Error joining game:', error));
   }, [gameId, currentUser]);
 
-  // Create Game Subscription
-  useEffect(() => {
-    if (!gameId || !currentUser) return;
-    gameStateManagementService.createFirebaseSubscription(gameId);
+  // Subscribe to game updates and sync chess state
+  const { gameData } = useGameSubscription(gameId, chessGame, renderMove);
 
-    return () => {
-      gameStateManagementService.unsubscribeFromGame();
-    };
-  }, [gameId, currentUser]);
+  // Chess game logic and interactions
+  const { optionSquares, onSquareClick, onPieceDrop, clearSelection } =
+    useChessGameLogic(
+      chessGame,
+      gameId,
+      gameData,
+      currentUser,
+      viewingHistoryIndex,
+      renderMove
+    );
 
-  //Subscribe to game changes
-  const gameData = useGamePropSelector((game) => game, DEFAULT_GAME);
-
-  //On Game Data change
-  useEffect(() => {
-    if (!gameData) return;
-    chessGame.load(gameData.fen);
-    renderMove(gameData.fen, gameData.lastMove?.from, gameData.lastMove?.to);
-  }, [gameData]);
-
-  function isMyPiece(square: Square) {
-    const piece = chessGame.get(square);
-    if (!piece) return false;
-    if (!currentUser || !gameData?.players) return false;
-
-    // Use service to determine player side
-    const mySide = playerService.getPlayerSide(currentUser, gameData.players);
-    if (!mySide) return false;
-
-    const mySideColor = mySide === 'white' ? 'w' : 'b';
-    return piece.color === mySideColor;
-  }
-  /** Validates if current user can make a move (checks turn, time, players joined, game status) */
-  function canMove() {
-    if (!currentUser || !gameData?.players || gameData?.status === 'ended')
-      return false;
-
-    // Check if both players joined
-    if (!gameData.players.white || !gameData.players.black) return false;
-
-    // determine player side
-    const mySide = playerService.getPlayerSide(currentUser, gameData.players);
-    if (!mySide) return false;
-
-    // Check if it's my turn
-    if ((chessGame.turn() === 'w' ? 'white' : 'black') !== mySide) return false;
-
-    // Check time in real-time
-    if (playerService.getRemainingTime(mySide, gameData) <= 0) return false;
-
-    return true;
-  }
-  /** Highlights legal moves for a piece (different styles for captures vs normal moves) */
-  function getMoveOptions(square: Square) {
-    const moves = chessGame.moves({ square, verbose: true });
-    if (!moves || moves.length === 0) {
-      setOptionSquares({});
-      return false;
-    }
-
-    const newSquares: Record<string, React.CSSProperties> = {};
-    for (const m of moves) {
-      newSquares[m.to] = {
-        background:
-          chessGame.get(m.to) &&
-          chessGame.get(m.to)?.color !== chessGame.get(square)?.color
-            ? 'radial-gradient(circle, rgba(0, 0, 0, 0.1) 85%, transparent 85%)'
-            : 'radial-gradient(circle, rgba(0, 0, 0, 0.1) 25%, transparent 25%)',
-        borderRadius: '50%',
-      };
-    }
-    newSquares[square] = { background: 'rgba(255, 255, 0, 0.4)' };
-    setOptionSquares(newSquares);
-    return true;
-  }
-  /** Handles click-based move input (select piece ΓåÆ click destination) */
-  function onSquareClick({ square, piece }: SquareHandlerArgs) {
-    if (!canMove() || viewingHistoryIndex !== null) return;
-    if (piece && !isMyPiece(square as Square)) return;
-    if (moveFrom && !isMyPiece(moveFrom)) return;
-
-    if (moveFrom === square) {
-      setMoveFrom('');
-      setOptionSquares({});
-      return;
-    }
-
-    if (!moveFrom && piece) {
-      const has = getMoveOptions(square as Square);
-      if (has) setMoveFrom(square as Square);
-      return;
-    }
-
-    const moves = chessGame.moves({
-      square: moveFrom as Square,
-      verbose: true,
-    });
-    const found = moves.find((m) => m.from === moveFrom && m.to === square);
-
-    if (!found) {
-      const has = getMoveOptions(square as Square);
-      setMoveFrom(has ? (square as Square) : '');
-      return;
-    }
-
-    try {
-      const move = chessGame.move({
-        from: moveFrom as Square,
-        to: square as Square,
-        promotion: 'q',
-      });
-      if (!move) return false;
-      const newFen = chessGame.fen();
-      renderMove(newFen, move.from, move.to);
-      gameService.updateGameInDb(gameId!, gameData!, chessGame, newFen, move);
-    } catch {
-      const has = getMoveOptions(square as Square);
-      setMoveFrom(has ? (square as Square) : '');
-      return;
-    }
-  }
-
-  function onPieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs) {
-    if (!canMove()) return false;
-    // Don't allow moves while viewing history
-    if (viewingHistoryIndex !== null) return false;
-
-    if (!isMyPiece(sourceSquare as Square)) return false;
-    if (!targetSquare) return false;
-
-    try {
-      const move = gameService.move(chessGame, sourceSquare, targetSquare);
-      if (!move) return false;
-      gameService.updateGameInDb(
-        gameId!,
-        gameData!,
-        chessGame,
-        chessGame.fen(),
-        move
-      );
-      renderMove(chessGame.fen(), move.from, move.to);
-      return true;
-    } catch {
-      return false;
-    }
-  }
   function renderMove(
     fen: string,
     from?: Square,
@@ -212,8 +73,7 @@ export default function ChessGame() {
       setLastMoveSquares({ from, to });
     }
     setViewingHistoryIndex(index);
-    setOptionSquares({});
-    setMoveFrom('');
+    clearSelection();
   }
   /** Navigates to a historical position for review (doesn't affect actual game) */
   function viewMove(index: number) {

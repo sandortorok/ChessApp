@@ -1,5 +1,5 @@
 import { useObservable } from '@/shared';
-import { gameStateManagementService, type Game } from '..';
+import { gameStateService, type Game } from '..';
 import { distinctUntilChanged, map } from 'rxjs';
 
 export function useGamePropSelector<T>(
@@ -7,10 +7,7 @@ export function useGamePropSelector<T>(
   defaultValue: T
 ): T {
   return useObservable(
-    gameStateManagementService.gameData$.pipe(
-      map(selector),
-      distinctUntilChanged()
-    ),
+    gameStateService.gameData$.pipe(map(selector), distinctUntilChanged()),
     defaultValue
   );
 }

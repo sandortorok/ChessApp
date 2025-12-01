@@ -3,7 +3,8 @@ import { ChessClock, useGamePropSelector, DEFAULT_GAME } from '@/features/game';
 import { getPlayerInfoForPosition } from '@/features/game/utils/gameLayoutHelpers';
 import { useAuth } from '@/features/auth';
 import { useParams } from 'react-router-dom';
-import { gameService } from '@/features/game/services/gameService';
+import { gameTimerService } from '@/features/game/services/gameTimerService';
+import { gameEndService } from '@/features/game/services/gameEndService';
 
 interface PlayerInfoWithClockProps {
   position: 'top' | 'bottom';
@@ -32,7 +33,9 @@ export default function PlayerInfoWithClock({
     if (!gameId || !gameData || gameData.status === 'ended') return;
 
     try {
-      await gameService.handleTimeout(gameId, gameData, playerColor);
+      await gameTimerService.handleTimeout(gameId, gameData, playerColor);
+      const winner = playerColor === 'white' ? 'black' : 'white';
+      await gameEndService.finalizeGameEnd(gameId, gameData, winner);
     } catch (err) {
       console.error('Error handling timeout:', err);
     }

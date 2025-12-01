@@ -52,4 +52,4 @@ class GameStateService {
     }
   }
 }
-export const gameStateManagementService = GameStateService.getInstance();
+export const gameStateService = GameStateService.getInstance();
