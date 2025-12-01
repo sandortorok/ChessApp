@@ -1,4 +1,4 @@
-import { DEFAULT_GAME, useGamePropSelector } from "..";
+import { useGamePropSelector } from "..";
 import type { MoveHistoryType } from "../types/index";
 interface Props {
     viewingHistoryIndex: number | null;
@@ -13,7 +13,7 @@ export default function MoveHistory({
 }: Props) {
     const moveHistory = useGamePropSelector(
         game => game.moves,
-        DEFAULT_GAME.moves
+        []
     );
     // Lépések párokba rendezése (fehér-fekete)
     const movePairs: Array<{ white?: MoveHistoryType; black?: MoveHistoryType; moveNumber: number }> = [];

@@ -18,41 +18,36 @@ class GameStateService {
         }
         return GameStateService.instance;
     }
-    private gameDataSubject = new BehaviorSubject<Game>({
-        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', // Kezdő pozíció
-        moves: [],
-        lastMove: null,
-        players: null,
-        turn: 'white',
-        status: 'waiting',
-        winner: null,
-        winReason: null,
-        timeLeft: { white: 0, black: 0 },
-        createdAt: 0,
-        updatedAt: 0,
-        drawOfferedBy: null,
-        timeControl: 0,
-        increment: 0,
-        opponentType: undefined,
-        startingElo: undefined,
-        finalElo: undefined
-    });
+    private gameDataSubject = new BehaviorSubject<Game>(DEFAULT_GAME);
     public readonly gameData$ = this.gameDataSubject.asObservable();
-    public subscribeToGame(gameId: string): void {
+    private gameIdSubject = new BehaviorSubject<string | null>(null);
+    public readonly gameId$ = this.gameIdSubject.asObservable();
+
+    public setGameId(gameId: string | null): void {
+        this.gameIdSubject.next(gameId);
+    }
+    public createFirebaseSubscription(gameId: string): void {
         if (this.firebaseUnsubscribe) {
             this.firebaseUnsubscribe();
         }
+        this.setGameId(gameId);
 
         const gameRef = ref(db, `games/${gameId}`);
         this.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
             const game: Game | null = snapshot.val();
             if (game) {
-                console.log("Game data updated:", game);
-                this.gameDataSubject.next(game);
+                // realtime database doesn't save empty arrays, so we need to normalize
+                const normalizedGame: Game = {
+                    ...game,
+                    moves: game.moves ?? []
+                };
+                console.log("Received game data from Firebase:", normalizedGame);
+                // @ts-ignore - observers is deprecated but useful for debugging
+                console.log("gameData$ feliratkozók száma:", this.gameDataSubject.observers?.length ?? 0);
+                this.gameDataSubject.next(normalizedGame);
             }
         });
     }
-      // ÚJ METÓDUS: Leiratkozás
     public unsubscribeFromGame(): void {
         if (this.firebaseUnsubscribe) {
         this.firebaseUnsubscribe();
@@ -60,6 +55,6 @@ class GameStateService {
         }
     }
 }
-export const gameStateService = GameStateService.getInstance();
+export const gameStateManagementService = GameStateService.getInstance();
 
 
