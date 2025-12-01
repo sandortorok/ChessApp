@@ -11,6 +11,10 @@ export { default as DrawOfferModal } from './modals/DrawOfferModal';
 export * from './services/gameService';
 export * from './services/aiGameService';
 export * from './services/lichessService';
+export * from './services/gameStateManagement';
 export * from './hooks/useGameInitializer';
+export * from './hooks/useGameStatus';
+export * from './hooks/useGamePropSelector';
 export * from './utils/gameLayoutHelpers';
 export * from './types';
+export * from './constants/gameDefaults'

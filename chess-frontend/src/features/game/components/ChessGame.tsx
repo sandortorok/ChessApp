@@ -558,7 +558,6 @@ export default function ChessGame() {
                         {/* Lépéstörténet */}
                         <div className="flex-1 min-h-0">
                             <MoveHistory
-                                moveHistory={moveHistory}
                                 viewingHistoryIndex={viewingHistoryIndex}
                                 onViewMove={viewMove}
                                 onGoToLatest={goToLatestPosition}

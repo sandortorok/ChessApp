@@ -1,19 +1,20 @@
+import { DEFAULT_GAME, useGamePropSelector } from "..";
 import type { MoveHistoryType } from "../types/index";
-
-
 interface Props {
-    moveHistory: MoveHistoryType[];
     viewingHistoryIndex: number | null;
     onViewMove: (index: number) => void;
     onGoToLatest?: () => void;
 }
 
 export default function MoveHistory({
-    moveHistory,
     viewingHistoryIndex,
     onViewMove,
     onGoToLatest
 }: Props) {
+    const moveHistory = useGamePropSelector(
+        game => game.moves,
+        DEFAULT_GAME.moves
+    );
     // Lépések párokba rendezése (fehér-fekete)
     const movePairs: Array<{ white?: MoveHistoryType; black?: MoveHistoryType; moveNumber: number }> = [];
     for (let i = 0; i < moveHistory.length; i += 2) {
@@ -141,25 +142,8 @@ export default function MoveHistory({
                         </button>
                     </div>
                     </>
-                )}  
+                )}
             </div>
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(16, 185, 129, 0.1);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(16, 185, 129, 0.5);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(16, 185, 129, 0.7);
-                }
-            `}</style>
         </div>
     );
 }
