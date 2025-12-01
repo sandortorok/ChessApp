@@ -10,10 +10,10 @@ import type { Chess, Move } from "chess.js";
 import type { Game, GameEndInfo, MoveHistoryType, PlayerColor, Status, TimeLeft, Winner, winReason } from "../types/index";
 
 export class GameService {
-  isLegalMove(chessGame: Chess, sourceSquare: string, targetSquare: string): boolean {
-    const legalMoves = chessGame.moves({ square: sourceSquare as any, verbose: true });
-    return legalMoves.some(move => move.to === targetSquare);
-  }
+  // isLegalMove(chessGame: Chess, sourceSquare: string, targetSquare: string): boolean {
+  //   const legalMoves = chessGame.moves({ square: sourceSquare as any, verbose: true });
+  //   return legalMoves.some(move => move.to === targetSquare);
+  // }
   /**
    * Update game state in Firebase after a move
    */
@@ -22,17 +22,17 @@ export class GameService {
     if (!move) return null;
     return move;
   }
-  calculateTimeLeft(gameData: Game) {
+  calculateTimeLeft(gameData: Game, playerWhoMoved: PlayerColor): TimeLeft {
     const now = Date.now();
     const lastUpdate = gameData.updatedAt || now;
     const elapsed = gameData.status !== "waiting" ? (now - lastUpdate) : 0;
     const newTimeLeft: TimeLeft = { ...gameData.timeLeft };
-    const reverseTurn = gameData.turn === "white" ? "black" : "white";
-    // Time management
+
+    // Subtract elapsed time from the player who just moved
     if (gameData.status !== "waiting") {
-      newTimeLeft[reverseTurn] = Math.max(0, newTimeLeft[reverseTurn] - elapsed);
+      newTimeLeft[playerWhoMoved] = Math.max(0, newTimeLeft[playerWhoMoved] - elapsed);
       const incrementMs = (gameData.increment || 0) * 1000;
-      newTimeLeft[reverseTurn] += incrementMs;
+      newTimeLeft[playerWhoMoved] += incrementMs;
     }
     return newTimeLeft;
   }
@@ -50,7 +50,7 @@ export class GameService {
     }
     if (chessGame.isCheckmate()) {
       status = "ended";
-      winner = gameData.turn === "white" ? "black" : "white";
+      winner = playerMoved;
       winReasonValue = "checkmate";
     } else if (this.getDrawReason(chessGame)) {
       status = "ended";
@@ -108,7 +108,10 @@ export class GameService {
     newFen: string,
     move: Move
   ): Promise<void> {
-    const newTimeLeft = this.calculateTimeLeft(gameData);
+    // chessGame.turn() returns the NEXT player (after the move)
+    // So the player who just moved is the opposite
+    const playerWhoMoved = chessGame.turn() === "w" ? "black" : "white";
+    const newTimeLeft = this.calculateTimeLeft(gameData, playerWhoMoved);
     const gameEndInfo = this.checkGameEndConditions(chessGame, gameData, newTimeLeft);
     const newMove = this.createNewMoveHistoryElement(gameData, move, newFen, newTimeLeft);
     const currentMoves = gameData?.moves || [];

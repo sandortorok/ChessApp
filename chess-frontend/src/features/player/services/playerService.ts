@@ -7,7 +7,7 @@ import { ref, set, get, update } from "firebase/database";
 import { doc, getDoc } from "firebase/firestore";
 import { db, firestore } from "@/lib/firebase/config";
 import type { User } from "firebase/auth";
-import type { Game } from "@/features/game/types/index";
+import type { Game, Players } from "@/features/game/types/index";
 
 // Constants
 const DEFAULT_ELO = 1200;
@@ -102,20 +102,20 @@ export class PlayerService {
   /**
    * Get player's side in a game
    */
-  getPlayerSide(user: User | null, gameData: Game | null): "white" | "black" | null {
-    if (!user || !gameData?.players) return null;
+  getPlayerSide(user: User, players: Players): "white" | "black" | null {
+    if (!user || !players) return null;
 
-    if (gameData.players.white?.uid === user.uid) return "white";
-    if (gameData.players.black?.uid === user.uid) return "black";
-
+    if (players.white?.uid === user.uid) return "white";
+    if (players.black?.uid === user.uid) return "black";
     return null;
   }
 
   /**
    * Check if user is a player in the game
    */
-  isPlayer(user: User | null, gameData: Game | null): boolean {
-    return this.getPlayerSide(user, gameData) !== null;
+  isPlayer(user: User, gameData: Game): boolean {
+    if (!gameData.players) return false;
+    return this.getPlayerSide(user, gameData.players) !== null;
   }
 
   /**
@@ -165,7 +165,7 @@ export class PlayerService {
   } | null {
     if (!user || !gameData?.players) return null;
 
-    const mySide = this.getPlayerSide(user, gameData);
+    const mySide = this.getPlayerSide(user, gameData.players);
     if (!mySide) return null;
 
     const opponentSide = mySide === "white" ? "black" : "white";
@@ -177,11 +177,9 @@ export class PlayerService {
    */
   getRemainingTime(
     side: "white" | "black",
-    gameData: Game | null,
-    currentTurn: "white" | "black"
-  ): number {
+    gameData: Game | null  ): number {
     if (!gameData || !gameData.timeLeft || !gameData.updatedAt) return 0;
-
+    
     // If game hasn't started, return initial time
     if (gameData.status === "waiting") return gameData.timeLeft[side];
 
@@ -189,7 +187,7 @@ export class PlayerService {
     const elapsed = now - gameData.updatedAt;
 
     // Only decrease time for the current turn player
-    if (side === currentTurn) {
+    if (side === gameData.turn) {
       return Math.max(0, gameData.timeLeft[side] - elapsed);
     } else {
       return gameData.timeLeft[side];

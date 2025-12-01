@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { ref, push, onValue, off } from "firebase/database";
-import { db } from "@/lib/firebase/config";
+import { auth, db } from "@/lib/firebase/config";
+import { gameStateManagementService } from "@/features/game";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 interface Message {
     id: string;
@@ -10,17 +12,14 @@ interface Message {
     timestamp: number;
 }
 
-interface ChatBoxProps {
-    gameId: string;
-    currentUserId: string;
-    currentUserName: string;
-}
-
-export default function ChatBox({ gameId, currentUserId, currentUserName }: ChatBoxProps) {
+export default function ChatBox() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [currentUserName, setCurrentUserName] = useState<string>("Guest");
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
+    let gameId: string | null = null;
+    gameStateManagementService.gameId$.subscribe(id => gameId = id);
     // Üzenetek betöltése
     useEffect(() => {
         if (!gameId) return;
@@ -44,7 +43,16 @@ export default function ChatBox({ gameId, currentUserId, currentUserName }: Chat
 
         return () => off(messagesRef);
     }, [gameId]);
-
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            if (user) {
+                const userName = user.displayName || user.email?.split('@')[0] || "Guest";
+                setCurrentUserName(userName);
+            }
+        });
+        return () => unsub();
+    }, []);
     // Auto-scroll az új üzenetekhez - csak a chat konténeren belül
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
@@ -59,7 +67,7 @@ export default function ChatBox({ gameId, currentUserId, currentUserName }: Chat
         
         try {
             await push(messagesRef, {
-                senderId: currentUserId,
+                senderId: currentUser?.uid || "",
                 senderName: currentUserName,
                 text: inputText.trim(),
                 timestamp: Date.now(),
@@ -71,7 +79,7 @@ export default function ChatBox({ gameId, currentUserId, currentUserName }: Chat
         }
     };
 
-    const isMyMessage = (message: Message) => message.senderId === currentUserId;
+    const isMyMessage = (message: Message) => message.senderId === currentUser?.uid;
 
     return (
         <div className="backdrop-blur-xl bg-gray-900/40 rounded-xl border border-teal-500/30 overflow-hidden flex flex-col h-full w-full max-w-full min-w-[400px] shrink-0">

@@ -1,24 +1,35 @@
 import type { User } from "firebase/auth";
 import type { Game, Player } from "../types/index";
 
-export function getGameLayout(currentUser: User | null, gameData: Game | null) {
+export function getBoardOrientation(currentUser: User | null, gameData: Game | null): "white" | "black" {
     const isWhite = currentUser?.uid === gameData?.players?.white?.uid;
-    const boardOrientation: "white" | "black" = isWhite ? "white" : "black";
+    return isWhite ? "white" : "black";
+}
 
-    const topPlayer = isWhite ? gameData?.players?.black : gameData?.players?.white;
-    const bottomPlayer = isWhite ? gameData?.players?.white : gameData?.players?.black;
+export function getPlayer(
+    currentUser: User | null,
+    gameData: Game | null,
+    position: "top" | "bottom"
+): Player | undefined {
+    const isWhite = currentUser?.uid === gameData?.players?.white?.uid;
 
-    const topPlayerColor: "white" | "black" = isWhite ? "black" : "white";
-    const bottomPlayerColor: "white" | "black" = isWhite ? "white" : "black";
+    if (position === "bottom") {
+        return isWhite ? gameData?.players?.white : gameData?.players?.black;
+    }
+    return isWhite ? gameData?.players?.black : gameData?.players?.white;
+}
 
-    return {
-        isWhite,
-        boardOrientation,
-        topPlayer,
-        bottomPlayer,
-        topPlayerColor,
-        bottomPlayerColor,
-    } as const;
+export function getPlayerColor(
+    currentUser: User | null,
+    gameData: Game | null,
+    position: "top" | "bottom"
+): "white" | "black" {
+    const isWhite = currentUser?.uid === gameData?.players?.white?.uid;
+
+    if (position === "bottom") {
+        return isWhite ? "white" : "black";
+    }
+    return isWhite ? "black" : "white";
 }
 
 export function getPlayerEloData(
@@ -41,5 +52,29 @@ export function getPlayerEloData(
         startingElo,
         currentElo,
         eloChange,
+    };
+}
+
+export function getPlayerData(
+    currentUser: User | null,
+    gameData: Game | null,
+    position: "top" | "bottom"
+) {
+    const player = getPlayer(currentUser, gameData, position);
+    const playerColor = getPlayerColor(currentUser, gameData, position);
+    const { startingElo, currentElo, eloChange } = getPlayerEloData(gameData, playerColor, player);
+    const initialTime = gameData?.timeLeft?.[playerColor] ?? 0;
+    const active = gameData?.turn === playerColor &&
+                   gameData?.status !== "ended" &&
+                   gameData?.status !== "waiting";
+
+    return {
+        player,
+        playerColor,
+        startingElo,
+        currentElo,
+        eloChange,
+        initialTime,
+        active,
     };
 }

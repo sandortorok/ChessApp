@@ -96,11 +96,11 @@ export default function GameActionButtons() {
     }
     async function onSurrender() {
         // Ellenőrizzük, hogy játékos vagy-e és a játék nem ért-e véget
-        if (!gameId || !gameData || gameData.status === "ended" || !currentUser) return;
+        if (!gameId || !gameData.players || gameData.status === "ended" || !currentUser) return;
         console.log("Feladás...");
         
         // Service-t használjuk a játékos oldalának meghatározására
-        const mySide = playerService.getPlayerSide(currentUser, gameData);
+        const mySide = playerService.getPlayerSide(currentUser, gameData.players);
         
         // Csak játékos adhatja fel a játékot (nem néző)
         if (!mySide) return;
@@ -109,7 +109,7 @@ export default function GameActionButtons() {
         setShowSurrenderConfirm(true);
     }
     async function confirmSurrender() {
-        if (!gameId || !gameData || !currentUser) return;
+        if (!gameId || !gameData.players || !currentUser) return;
 
         // Modal bezárása azonnal
         setShowSurrenderConfirm(false);
@@ -119,7 +119,7 @@ export default function GameActionButtons() {
         const gameRef = ref(db, `games/${gameId}`);
 
         // Service-t használjuk a játékos oldalának meghatározására
-        const mySide = playerService.getPlayerSide(currentUser, gameData);
+        const mySide = playerService.getPlayerSide(currentUser, gameData.players);
         if (!mySide) return;
 
         const winner = mySide === "white" ? "black" : "white";
@@ -194,29 +194,13 @@ export default function GameActionButtons() {
     return (
         <div className="flex gap-3 justify-center items-center py-2">
             {gameData.moves.length <= 1 && (
-                <GameActionButton
-                    onClick={() => onAbort()}
-                    variant="orange"
-                    icon="⛔"
-                    label="Megszakítás"
-                />
+                <GameActionButton onClick={() => onAbort()} variant="orange" icon="⛔" label="Megszakítás" />
             )}
 
             {gameData.moves.length > 1 && gameData?.status !== "ended" && (
                 <>
-                    <GameActionButton
-                        onClick={() => onOfferDraw()}
-                        variant="emerald"
-                        icon="🤝"
-                        label="Döntetlen"
-                    />
-
-                    <GameActionButton
-                        onClick={() => onSurrender()}
-                        variant="red"
-                        icon="🏳️"
-                        label="Feladás"
-                    />
+                    <GameActionButton onClick={() => onOfferDraw()} variant="emerald" icon="🤝" label="Döntetlen"/>
+                    <GameActionButton onClick={() => onSurrender()} variant="red" icon="🏳️" label="Feladás"/>
                 </>
             )}
             <ConfirmSurrenderModal

@@ -41,9 +41,6 @@ class GameStateService {
                     ...game,
                     moves: game.moves ?? []
                 };
-                console.log("Received game data from Firebase:", normalizedGame);
-                // @ts-ignore - observers is deprecated but useful for debugging
-                console.log("gameData$ feliratkozók száma:", this.gameDataSubject.observers?.length ?? 0);
                 this.gameDataSubject.next(normalizedGame);
             }
         });

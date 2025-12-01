@@ -25,7 +25,6 @@ export default function Header() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      console.log("Auth state changed, user:", firebaseUser);
       
       // Load avatar from Firestore
       if (firebaseUser) {

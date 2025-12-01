@@ -46,9 +46,9 @@ export type Game = {
   winner: Winner;
   winReason: winReason | null;
   timeLeft: TimeLeft; // milliseconds
-  timeControl?: number; // milliseconds
-  increment?: number; // milliseconds
-  opponentType?: "human" | "ai";
+  timeControl: number; // milliseconds
+  increment: number; // milliseconds
+  opponentType: "human" | "ai";
   createdAt: number;
   updatedAt: number;
   startingElo?: PlayerElos;
