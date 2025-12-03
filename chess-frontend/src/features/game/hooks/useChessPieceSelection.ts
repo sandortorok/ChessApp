@@ -52,6 +52,7 @@ export function useChessPieceSelection(chessGame: Chess) {
     moveFrom,
     setMoveFrom,
     optionSquares,
+    setOptionSquares,
     getMoveOptions,
     clearSelection,
   };

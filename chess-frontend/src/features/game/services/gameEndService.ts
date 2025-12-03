@@ -46,9 +46,10 @@ export class GameEndService {
     let winReasonValue: winReason | null = null;
     const playerMoved = gameData.turn === 'white' ? 'black' : 'white';
 
+    // Check if player who just moved ran out of time (they lose)
     if (timeLeft[playerMoved] === 0 && gameData.status !== 'waiting') {
       status = 'ended';
-      winner = playerMoved;
+      winner = playerMoved === 'white' ? 'black' : 'white'; // Opponent wins
       winReasonValue = 'timeout';
     }
 

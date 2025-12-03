@@ -28,6 +28,7 @@ export function useChessGameLogic(
     moveFrom,
     setMoveFrom,
     optionSquares,
+    setOptionSquares,
     getMoveOptions,
     clearSelection,
   } = useChessPieceSelection(chessGame);

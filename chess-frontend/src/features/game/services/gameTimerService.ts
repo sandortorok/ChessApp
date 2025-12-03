@@ -22,7 +22,7 @@ export class GameTimerService {
    * Calculates remaining time for both players after a move
    * Applies time increment if configured
    * @param gameData - Current game state
-   * @param playerWhoMoved - Color of the player who just moved
+   * @param playerWhoMoved - Color of the player who just moved (their time was ticking down)
    * @returns Updated time remaining for both players
    */
   calculateTimeLeft(gameData: Game, playerWhoMoved: PlayerColor): TimeLeft {
@@ -31,6 +31,8 @@ export class GameTimerService {
     const elapsed = gameData.status !== 'waiting' ? now - lastUpdate : 0;
     const newTimeLeft: TimeLeft = { ...gameData.timeLeft };
 
+    // The player who just moved was the one whose time was ticking down
+    // Subtract the elapsed time from their clock and add increment
     if (gameData.status !== 'waiting') {
       newTimeLeft[playerWhoMoved] = Math.max(
         0,

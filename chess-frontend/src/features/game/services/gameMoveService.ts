@@ -79,7 +79,8 @@ export class GameMoveService {
     },
     newTimeLeft: { white: number; black: number },
     newMove: MoveHistoryType,
-    currentMoves: MoveHistoryType[]
+    currentMoves: MoveHistoryType[],
+    nextTurn: 'white' | 'black'
   ): Partial<Game> {
     return {
       fen,
@@ -94,6 +95,7 @@ export class GameMoveService {
       moves: [...currentMoves, newMove],
       timeLeft: newTimeLeft,
       winReason: gameEndInfo.winReasonValue,
+      turn: nextTurn,
     };
   }
 
@@ -114,7 +116,10 @@ export class GameMoveService {
     move: Move
   ): Promise<void> {
     // chess.js turn() returns the next player to move, so we invert to get who just moved
-    const playerWhoMoved = chessGame.turn() === 'w' ? 'black' : 'white';
+    const currentTurn = chessGame.turn();
+    console.log('chessGame.turn():', currentTurn, 'type:', typeof currentTurn);
+    const playerWhoMoved = currentTurn === 'w' ? 'black' : 'white';
+    const nextTurn = currentTurn === 'w' ? 'white' : 'black';
 
     const newTimeLeft = gameTimerService.calculateTimeLeft(
       gameData,
@@ -140,7 +145,8 @@ export class GameMoveService {
       gameEndInfo,
       newTimeLeft,
       newMove,
-      currentMoves
+      currentMoves,
+      nextTurn
     );
 
     try {

@@ -12,8 +12,6 @@ export * from './services/gameMoveService';
 export * from './services/gameTimerService';
 export * from './services/gameEndService';
 export * from './services/eloService';
-export * from './services/aiGameService';
-export * from './services/lichessService';
 export * from './services/gameStateService';
 export * from './hooks/useGameInitializer';
 export * from './hooks/useGameStatus';

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import { useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
@@ -45,6 +45,22 @@ export default function ChessGame() {
       .catch((error) => console.error('Error joining game:', error));
   }, [gameId, currentUser]);
 
+  const renderMove = useCallback(
+    (
+      fen: string,
+      from?: Square,
+      to?: Square,
+      index: number | null = null
+    ) => {
+      setChessPosition(fen);
+      if (from && to) {
+        setLastMoveSquares({ from, to });
+      }
+      setViewingHistoryIndex(index);
+    },
+    []
+  );
+
   const { gameData } = useGameSubscription(gameId, chessGame, renderMove);
 
   const { optionSquares, onSquareClick, onPieceDrop, clearSelection } =
@@ -57,19 +73,11 @@ export default function ChessGame() {
       renderMove
     );
 
-  function renderMove(
-    fen: string,
-    from?: Square,
-    to?: Square,
-    index: number | null = null
-  ) {
-    setChessPosition(fen);
-    if (from && to) {
-      setLastMoveSquares({ from, to });
-    }
-    setViewingHistoryIndex(index);
+  // Clear piece selection when position changes (e.g., opponent moves)
+  useEffect(() => {
     clearSelection();
-  }
+  }, [chessPosition, clearSelection]);
+
   /** Navigates to a historical position for review (doesn't affect actual game) */
   function viewMove(index: number) {
     if (!gameData || !gameData.moves) return;
